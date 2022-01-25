@@ -7,7 +7,7 @@ const fs = require('fs')
 const path = require('path')
 
 
-class GenerateServiceWorker {
+class GenerateServiceWorkerWebpackPlugin {
   constructor(options = {}) {
     this.options = {}
     // .appcache 文件名称
@@ -88,4 +88,4 @@ class GenerateServiceWorker {
   }
 }
 
-module.exports = GenerateServiceWorker
+module.exports = GenerateServiceWorkerWebpackPlugin

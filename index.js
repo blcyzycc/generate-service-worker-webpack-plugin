@@ -14,6 +14,10 @@ class GenerateServiceWorkerWebpackPlugin {
     this.options.name = options.name || 'sw'
     // 应用版本号
     this.options.version = options.version || '1.0.0'
+    // 此正则匹配到的文件，不进行缓存
+    this.options.excache = options.excache || null
+    // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
+    this.options.size = options.size || [0, 1024 * 1024 * 1024]
   }
 
   apply(compiler) {
@@ -59,8 +63,19 @@ class GenerateServiceWorkerWebpackPlugin {
           }
         }
 
-        if (!/\.map$/.test(key)) {
-          cacheFiles.push(key)
+        let size = compilation.assets[key].size()
+        let max = Math.max(...This.options.size)
+        let min = Math.min(...This.options.size)
+
+        // 文件大小范围控制
+        if (size <= max && size >= min) {
+          // excache 匹配到的文件不缓存
+          if (!This.options.excache) {
+            cacheFiles.push(key)
+          }
+          else if (!This.options.excache.test(key)) {
+            cacheFiles.push(key)
+          }
         }
       }
 

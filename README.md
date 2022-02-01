@@ -20,8 +20,14 @@ npm install -D generate-service-worker-webpack-plugin
 
     if (process.env.NODE_ENV === 'production') {
       plugins.push(new GenerateServiceWorkerWebpackPlugin({
-        name: 'sw',         // service worker 文件名称
-        version: '1.1.0',   // 版本号
+        // service worker 文件名称
+        name: 'sw',
+        // 版本号
+        version: '1.1.0',
+        // 匹配文件名，成功则不进行离线缓存
+        excache: /(\.map$|\.mp4$)/,
+        // 缓存大小在此范围内文件，单位：字节
+        size: [1024 * 617, 1024 * 1024],
       }));
     }
 

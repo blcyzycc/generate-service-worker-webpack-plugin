@@ -6,6 +6,8 @@
 const fs = require('fs')
 const path = require('path')
 
+// -------------------------------------------需要加字段判断，sw.jw是绝对路径还是相对路径引入
+// 避免 The script has an unsupported MIME type ('text/html'). 报错
 
 class GenerateServiceWorkerWebpackPlugin {
   constructor(options = {}) {
@@ -39,12 +41,13 @@ class GenerateServiceWorkerWebpackPlugin {
       for (let key in compilation.assets) {
         if (/\.html$/.test(key)) {
           let source = compilation.assets[key].source()
-          let url = key.split('/').map(() => '../').join('').replace('../', '') // 得到需要引入的文件相对于 html 文件的路径
+          // let publicPath = key.split('/').map(() => '../').join('').replace('../', '') // 得到需要引入的文件相对于 html 文件的路径
+          let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
 
           let swLinkJs = fs.readFileSync(path.join(__dirname, 'src/swLink.js'), 'utf-8').toString()
 
           // 插入 sw.js 路径
-          swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, url + name)
+          swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, publicPath + name)
           // 插入 index.html 路径
           swLinkJs = swLinkJs.replace(`@@INDEX_HTML_PATH@@`, key)
           // 插入 hash 值，用来判断 Service Worker 更新

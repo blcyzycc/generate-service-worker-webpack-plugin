@@ -13,6 +13,7 @@ npm install -D generate-service-worker-webpack-plugin
 
 
 #### 使用说明
+```
   const GenerateServiceWorkerWebpackPlugin = require('generate-service-worker-webpack-plugin')
 
   configureWebpack: config => {
@@ -36,7 +37,7 @@ npm install -D generate-service-worker-webpack-plugin
       ...plugins
     ];
   }
-
+```
 #### 参与贡献
 blcyzycc
 

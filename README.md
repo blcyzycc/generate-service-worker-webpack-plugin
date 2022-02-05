@@ -6,7 +6,7 @@ webpack 打包自动生成并插入 service worker 文件
 
 
 #### 软件架构
-JavaScript
+Node.js 以及 JavaScript
 
 
 #### 安装教程

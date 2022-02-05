@@ -1,4 +1,5 @@
-# service-worker-webpack-plugin
+# generate-service-worker-webpack-plugin
+# https://github.com/blcyzycc/generate-service-worker-webpack-plugin
 
 #### 介绍
 webpack 打包自动生成并插入 service worker 文件

@@ -16,10 +16,10 @@ class GenerateServiceWorkerWebpackPlugin {
     // 此正则匹配到的文件，不进行缓存
     this.options.excache = options.excache || null
     // 此正则匹配到的文件，不进行缓存
-    this.options.cacheFlag = options.cacheFlag || null
+    this.options.cacheFlag = options.cacheFlag || ''
     // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
     this.options.size = options.size || [0, 1024 * 1024 * 10]
-
+    // 提供自定义过滤方法
     this.options.filter = options.filter
   }
 
@@ -87,8 +87,7 @@ class GenerateServiceWorkerWebpackPlugin {
         }
 
         // 如果文件中包含 cacheFlag，则缓存文件
-        if (source.indexOf(This.options.cacheFlag) > -1) {
-          console.log('-------------------------------------------------', key);
+        if (This.options.cacheFlag && source.indexOf(This.options.cacheFlag) > -1) {
           if (!cacheFiles.includes(key)) cacheFiles.push(key)
         }
       }

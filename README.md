@@ -25,10 +25,12 @@ cacheFlag 在项目文件中加入 flag，打包时匹配文件中是否包含�
           <div sw="ServiceWorkerFlag"></div>
           2、如果是js文件，把 cacheFlag 赋值到 window 对象的属性，如下：
           window.sw = 'ServiceWorkerFlag'
-excache   匹配文件名，成功则不进行离线缓存
-size      对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件
-          excache 和 size 会共同作用。
-filter    自定义过滤函数，有两个参数，参数1：缓存文件名列表， 参数2：compilation.assets ，需要返回文件路径列表
+excache   匹配文件名，成功则不进行离线缓存。
+size      对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件。
+          excache 和 size 会共同作用；
+filter    自定义过滤函数，有两个参数，返回文件路径列表。
+            cacheFiles    参数1：缓存文件名列表，
+            assets        参数2：compilation.assets
 
 ```
 const GenerateServiceWorkerWebpackPlugin = require('generate-service-worker-webpack-plugin')
@@ -58,10 +60,23 @@ module.exports = {
 ```
 
 #### 使用说明 2
-全部使用默认配置
+使用默认配置，默认离线缓存全部文件
 ```
 plugins.push(new GenerateServiceWorkerWebpackPlugin());
 ```
+
+#### 使用说明 3
+自定义过滤方法，比如只缓存js文件，可使用以下方式：
+```
+plugins.push(new GenerateServiceWorkerWebpackPlugin({
+  name: 'sw',
+  version: '1.0.1',
+  filter: function (cacheFiles, assets) {
+    return cacheFiles.filter(m => /(\.js$)/.test(m))
+  }
+}));
+```
+
 
 #### 参与贡献
 blcyzycc

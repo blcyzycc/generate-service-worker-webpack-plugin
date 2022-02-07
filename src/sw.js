@@ -20,14 +20,15 @@ this.addEventListener('install', function (event) {
   // 调试时跳过等待过程
   // self.skipWaiting();
 
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      // 以下路径的文件会进行缓存
-      return cache.addAll(CACHE_FILES)
-    }).catch(function (err) {
-      console.log(err)
-    })
-  );
+  // 立即缓存 CACHE_FILES 列表中的所有文件
+  // 会导致第一次进入应用加载缓慢，慎用
+  // event.waitUntil(
+  //   caches.open(CACHE_NAME).then(function (cache) {
+  //     return cache.addAll(CACHE_FILES)
+  //   }).catch(function (err) {
+  //     console.log(err)
+  //   })
+  // );
 })
 
 /* 当 sw.js 发生改变时触发 */
@@ -58,9 +59,24 @@ self.addEventListener('fetch', function (event) {
         return response
       } else {
         // console.log('没有缓存，返回网络文件', event.request.url);
-        return fetch(event.request)
+        return fetch(event.request).then(res => {
+          // 缓存文件
+          if (event.request.method === 'GET') {
+            let web = res.url.match(/^https?:\/\/[^\/]+/)[0] + '/'
+
+            // 响应 url 是文件格式，并且路径在 CACHE_FILES 中，缓存文件
+            if (/.+\..+$/.test(res.url) && CACHE_FILES.includes(res.url.replace(web, ''))) {
+              caches.open(CACHE_NAME).then(function (cache) {
+                cache.put(event.request, res)
+              }).catch(function (err) {
+                console.log(err)
+              })
+            }
+          }
+
+          return res.clone()
+        })
       }
     })
   );
 });
-

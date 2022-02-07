@@ -6,9 +6,6 @@
 const fs = require('fs')
 const path = require('path')
 
-// -------------------------------------------需要加字段判断，sw.jw是绝对路径还是相对路径引入
-// 避免 The script has an unsupported MIME type ('text/html'). 报错
-
 class GenerateServiceWorkerWebpackPlugin {
   constructor(options = {}) {
     this.options = {}
@@ -18,8 +15,12 @@ class GenerateServiceWorkerWebpackPlugin {
     this.options.version = options.version || '1.0.0'
     // 此正则匹配到的文件，不进行缓存
     this.options.excache = options.excache || null
+    // 此正则匹配到的文件，不进行缓存
+    this.options.cacheFlag = options.cacheFlag || null
     // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
-    this.options.size = options.size || [0, 1024 * 1024 * 1024]
+    this.options.size = options.size || [0, 1024 * 1024 * 10]
+
+    this.options.filter = options.filter
   }
 
   apply(compiler) {
@@ -39,8 +40,9 @@ class GenerateServiceWorkerWebpackPlugin {
 
       // 遍历打包后的文件列表
       for (let key in compilation.assets) {
+        let source = compilation.assets[key].source()
+
         if (/\.html$/.test(key)) {
-          let source = compilation.assets[key].source()
           // let publicPath = key.split('/').map(() => '../').join('').replace('../', '') // 得到需要引入的文件相对于 html 文件的路径
           let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
 
@@ -52,6 +54,8 @@ class GenerateServiceWorkerWebpackPlugin {
           swLinkJs = swLinkJs.replace(`@@INDEX_HTML_PATH@@`, key)
           // 插入 hash 值，用来判断 Service Worker 更新
           swLinkJs = swLinkJs.replace(`@@CACHE_HASH@@`, `@@CACHE_HASH=${hash}@@`)
+          // 去除换行
+          swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
 
           // 插入 sw.js 文件引入标签到 html 文件头部
           let html = source.replace(/(<\/head)/, `<script>${swLinkJs}</script>$1`)
@@ -66,20 +70,32 @@ class GenerateServiceWorkerWebpackPlugin {
           }
         }
 
+
         let size = compilation.assets[key].size()
         let max = Math.max(...This.options.size)
         let min = Math.min(...This.options.size)
 
-        // 文件大小范围控制
+        // 文件大小范围控制，缓存范围内的
         if (size <= max && size >= min) {
-          // excache 匹配到的文件不缓存
           if (!This.options.excache) {
             cacheFiles.push(key)
           }
+          // 文件名匹配 excache，匹配到的文件不缓存
           else if (!This.options.excache.test(key)) {
             cacheFiles.push(key)
           }
         }
+
+        // 如果文件中包含 cacheFlag，则缓存文件
+        if (source.indexOf(This.options.cacheFlag) > -1) {
+          console.log('-------------------------------------------------', key);
+          if (!cacheFiles.includes(key)) cacheFiles.push(key)
+        }
+      }
+
+      // 加入过滤函数，方便自定义筛选规则
+      if (This.options.filter) {
+        cacheFiles = This.options.filter(cacheFiles, compilation.assets)
       }
 
       let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()

@@ -36,6 +36,11 @@ if ('serviceWorker' in navigator) {
               window.location.reload()
             }
           }
+          else {
+            localStorage.removeItem('CACHE_HASH')
+            reg.unregister()
+            window.location.reload()
+          }
         }
       })
     }).catch(function (err) {

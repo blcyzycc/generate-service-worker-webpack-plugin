@@ -62,15 +62,18 @@ self.addEventListener('fetch', function (event) {
         return fetch(event.request).then(res => {
           // 缓存文件
           if (event.request.method === 'GET') {
-            let web = res.url.match(/^https?:\/\/[^\/]+/)[0] + '/'
+            let url = res.url || ''
+            let mt = url.match(/^https?:\/\/[^\/]+/)
 
-            // 响应 url 是文件格式，并且路径在 CACHE_FILES 中，缓存文件
-            if (/.+\..+$/.test(res.url) && CACHE_FILES.includes(res.url.replace(web, ''))) {
-              caches.open(CACHE_NAME).then(function (cache) {
-                cache.put(event.request, res)
-              }).catch(function (err) {
-                console.log(err)
-              })
+            if (mt && mt[0]) {
+              // 如果的响应 url 是文件格式，并且路径在 CACHE_FILES 中，则缓存文件
+              if (/.+\..+$/.test(url) && CACHE_FILES.includes(url.replace(mt[0] + '/', ''))) {
+                caches.open(CACHE_NAME).then(function (cache) {
+                  cache.put(event.request, res)
+                }).catch(function (err) {
+                  console.log(err)
+                })
+              }
             }
           }
 

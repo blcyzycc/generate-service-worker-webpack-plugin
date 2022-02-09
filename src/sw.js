@@ -62,6 +62,7 @@ self.addEventListener('fetch', function (event) {
         return fetch(event.request).then(res => {
           // 缓存文件
           if (event.request.method === 'GET') {
+            // 注意：跨域资源 url 为空，所以跨域资源不会缓存
             let url = res.url || ''
             let mt = url.match(/^https?:\/\/[^\/]+/)
 

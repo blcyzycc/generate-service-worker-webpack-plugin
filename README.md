@@ -17,9 +17,12 @@ Node.js 以及 JavaScript
 
 
 #### 安装教程
+```
 npm install -D generate-service-worker-webpack-plugin
+```
 
-####配置参数：<br>
+#### 配置参数：
+
 ```
 name      打包之后 service worker 文件的名称；
 version   打包之后 service worker 的版本号；

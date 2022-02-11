@@ -2,20 +2,27 @@
 
 源码地址：https://github.com/blcyzycc/generate-service-worker-webpack-plugin
 
+
+#### 介绍
+
+Vue项目 或基于 Webpack 搭建的单页面应用，在打包时自动生成并插入 Service Worker 文件。<br>
+网站部署后，用户进入网站会自动安装 Service Worker，并按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
+目前不支持跨域资源缓存。<br>
+您的项目要有 https 协议才能使 Service Worker 生效。<br>
+
+
+#### 软件架构
+
+Node.js 以及 JavaScript
+
+
 ##### 更新：
   1、解决请求跨域资源后，sw.js报错问题
+
 
 ##### 尚余问题：
   1、跨域资源无法缓存。
   2、用户不再使用此插件，更新后进入页面，应用已更新，但离线缓存文件依然存在（不会应用更新和使用，页面不会使用此缓存，但占用空间）。
-
-
-#### 介绍
-Vue 等基于 Webpack 的单页面应用，打包时自动生成并插入 service worker 文件。
-
-
-#### 软件架构
-Node.js 以及 JavaScript
 
 
 #### 安装教程
@@ -23,11 +30,12 @@ Node.js 以及 JavaScript
 npm install -D generate-service-worker-webpack-plugin
 ```
 
+
 #### 配置参数：
 
 ```
-name      可选，打包之后 service worker 文件的名称，默认 sw，全名 sw.js；
-version   可选，打包之后 service worker 的版本号，默认 1.0.0；
+name      可选，打包之后 Service Worker 文件的名称，默认 sw，全名 sw.js；
+version   可选，打包之后 Service Worker 的版本号，默认 1.0.0；
 cacheFlag 可选，在项目文件中加入 flag，打包时匹配文件中是否包含此 flag，有则缓存，且此配置具有最高优先级；
           注意由于 webpack 打包会 tree shaking，要避免 cacheFlag 打包时被移除，
           可以参考我的做法，
@@ -42,6 +50,7 @@ filter    可选，自定义过滤函数，有两个参数，返回文件路径�
             cacheFiles    参数1：缓存文件名列表，
             assets        参数2：compilation.assets
 ```
+
 
 #### 使用案例 1
 
@@ -72,14 +81,11 @@ module.exports = {
 }
 ```
 
-#### 使用案例 2
-使用默认配置，默认离线缓存全部文件
-```
-plugins.push(new GenerateServiceWorkerWebpackPlugin());
-```
 
-#### 使用案例 3
+#### 使用案例 2
+
 自定义过滤方法，比如只缓存js文件，可使用以下方式：
+
 ```
 plugins.push(new GenerateServiceWorkerWebpackPlugin({
   name: 'sw',
@@ -97,3 +103,19 @@ blcyzycc
 
 #### 特技
 
+你可以完全使用默认配置，离线缓存全部项目文件
+
+```
+plugins.push(new GenerateServiceWorkerWebpackPlugin());
+```
+
+filter 函数的 assets 参数是 Webpack 打包时 emit 事件的
+```
+plugins.push(new GenerateServiceWorkerWebpackPlugin({
+  name: 'sw',
+  version: '1.0.1',
+  filter: function (cacheFiles, assets) {
+    return cacheFiles.filter(m => /(\.js$)/.test(m))
+  }
+}));
+```

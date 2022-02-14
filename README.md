@@ -17,11 +17,11 @@ Node.js 以及 JavaScript
 
 
 ##### 更新：
-  1、解决请求跨域资源后，sw.js报错问题
+  1、更新使用说明
 
 
 ##### 尚余问题：
-  1、跨域资源无法缓存。
+  1、跨域资源无法缓存。<br>
   2、用户不再使用此插件，更新后进入页面，应用已更新，但离线缓存文件依然存在（不会应用更新和使用，页面不会使用此缓存，但占用空间）。
 
 
@@ -109,13 +109,32 @@ blcyzycc
 plugins.push(new GenerateServiceWorkerWebpackPlugin());
 ```
 
-filter 函数的 assets 参数是 Webpack 打包时 emit 事件的
+filter 函数的 assets 参数是 Webpack 打包时 emit 事件的 compilation.assets 属性，我们可以遍历 assets 得到打包的文件，并对其进行操作。<br>
+例如：替换 html 文件的 title。
 ```
 plugins.push(new GenerateServiceWorkerWebpackPlugin({
   name: 'sw',
   version: '1.0.1',
   filter: function (cacheFiles, assets) {
-    return cacheFiles.filter(m => /(\.js$)/.test(m))
+    // 遍历文件列表，可在此修改打包后的代码
+    for (let url in assets) {
+      // 判断是否为 html 文件
+      if (/\.html$/.test(url)) {
+        let source = assets[url].source()
+
+        // 将页面的 title 替换为 hello world
+        source = source.replace(/(<title[^>]*>)(.*)(<\/title[^>]*>)/, '$1hello world$3')
+
+        assets[url] = {
+          source() {
+            return source
+          },
+          size() {
+            return source.length
+          }
+        }
+      }
+    }
   }
 }));
 ```

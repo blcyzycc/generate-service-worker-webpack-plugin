@@ -8,5 +8,8 @@
   },
   "author": "blcyzycc",
   "license": "ISC",
-  "private": false
+  "private": false,
+  "devDependencies": {
+    "terser": "^5.12.1"
+  }
 }

@@ -5,6 +5,7 @@
 
 const fs = require('fs')
 const path = require('path')
+const { minify } = require("terser")
 
 class GenerateServiceWorkerWebpackPlugin {
   constructor(options = {}) {
@@ -28,7 +29,7 @@ class GenerateServiceWorkerWebpackPlugin {
 
     // 监听 emit 事件，因为发生 emit 事件时所有模块的转换和代码块对应的文件已经生成好，
     // 需要输出的资源即将输出，因此 emit 事件是修改 Webpack 输出资源的最后时机。
-    compiler.plugin('emit', function (compilation, callback) {
+    compiler.plugin('emit', async (compilation, callback) => {
       // 所有需要输出的资源会存放在 compilation.assets 中，
       // compilation.assets 是一个键值对，键为需要输出的文件名称，
       // 值为文件对应的操作方法
@@ -57,8 +58,11 @@ class GenerateServiceWorkerWebpackPlugin {
           // 去除换行
           swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
 
+          // 压缩代码
+          let swLinkJsMin = await minify(swLinkJs)
+
           // 插入 sw.js 文件引入标签到 html 文件头部
-          let html = source.replace(/(<\/head)/, `<script>${swLinkJs}</script>$1`)
+          let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
 
           compilation.assets[key] = {
             source() {
@@ -106,13 +110,16 @@ class GenerateServiceWorkerWebpackPlugin {
       // 插入需要离线缓存文件的路径集合
       swJs = swJs.replace(`'@@CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
 
+      // 压缩代码
+      let swJsMin = await minify(swJs)
+
       // 添加 sw.js 文件，sw.js 文件将放在根目录下
       compilation.assets[name] = {
         source() {
-          return swJs
+          return swJsMin.code
         },
         size() {
-          return swJs
+          return swJsMin.code.length
         }
       }
 

@@ -1,4 +1,4 @@
-'@@CACHE_HASH@@';
+window.CACHE_HASH = '@@CACHE_HASH@@';
 
 (function () {
   // 注册 Service Worker

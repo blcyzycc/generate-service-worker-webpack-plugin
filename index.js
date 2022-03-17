@@ -54,7 +54,7 @@ class GenerateServiceWorkerWebpackPlugin {
           // 插入 index.html 路径
           swLinkJs = swLinkJs.replace(`@@INDEX_HTML_PATH@@`, key)
           // 插入 hash 值，用来判断 Service Worker 更新
-          swLinkJs = swLinkJs.replace(`@@CACHE_HASH@@`, `@@CACHE_HASH=${hash}@@`)
+          swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, `@@SW_CACHE_HASH=${hash}@@`)
           // 去除换行
           swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
 
@@ -106,9 +106,9 @@ class GenerateServiceWorkerWebpackPlugin {
       // 插入版本号
       swJs = swJs.replace(`@@version@@`, `version ${This.options.version}`)
       // 插入缓存去名称
-      swJs = swJs.replace(`'@@CACHE_NAME@@'`, `'cache_${hash}'`)
+      swJs = swJs.replace(`'@@SW_CACHE_NAME@@'`, `'cache_${hash}'`)
       // 插入需要离线缓存文件的路径集合
-      swJs = swJs.replace(`'@@CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
+      swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
 
       // 压缩代码
       let swJsMin = await minify(swJs)

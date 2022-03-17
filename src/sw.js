@@ -4,10 +4,10 @@
  * */
 
 // 缓存区名称，打包时传入，值为字符串
-var CACHE_NAME = '@@CACHE_NAME@@'
+var SW_CACHE_NAME = '@@SW_CACHE_NAME@@'
 
 // 需要离线缓存的文件，在参与打包时会替换为形如 ['index.html', 'js/index.js'] 的数组
-var CACHE_FILES = '@@CACHE_FILES@@'
+var SW_CACHE_FILES = '@@SW_CACHE_FILES@@'
 
 
 /*
@@ -20,11 +20,11 @@ this.addEventListener('install', function (event) {
   // 调试时跳过等待过程
   // self.skipWaiting();
 
-  // 立即缓存 CACHE_FILES 列表中的所有文件
+  // 立即缓存 SW_CACHE_FILES 列表中的所有文件
   // 会导致第一次进入应用加载缓慢，慎用
   // event.waitUntil(
-  //   caches.open(CACHE_NAME).then(function (cache) {
-  //     return cache.addAll(CACHE_FILES)
+  //   caches.open(SW_CACHE_NAME).then(function (cache) {
+  //     return cache.addAll(SW_CACHE_FILES)
   //   }).catch(function (err) {
   //     console.log(err)
   //   })
@@ -37,9 +37,9 @@ self.addEventListener('activate', function (event) {
     // 遍历所有 caches 中缓存的 keys 值
     caches.keys().then(function (cacheNames) {
       return Promise.all(
-        // CACHE_NAME 更新，删除以前的缓存区文件
+        // SW_CACHE_NAME 更新，删除以前的缓存区文件
         cacheNames.filter(function (cacheName) {
-          return cacheName != CACHE_NAME
+          return cacheName != SW_CACHE_NAME
         }).map(function (cacheName) {
           return caches.delete(cacheName)
         })
@@ -67,9 +67,9 @@ self.addEventListener('fetch', function (event) {
             let mt = url.match(/^https?:\/\/[^\/]+/)
 
             if (mt && mt[0]) {
-              // 如果的响应 url 是文件格式，并且路径在 CACHE_FILES 中，则缓存文件
-              if (/.+\..+$/.test(url) && CACHE_FILES.includes(url.replace(mt[0] + '/', ''))) {
-                caches.open(CACHE_NAME).then(function (cache) {
+              // 如果的响应 url 是文件格式，并且路径在 SW_CACHE_FILES 中，则缓存文件
+              if (/.+\..+$/.test(url) && SW_CACHE_FILES.includes(url.replace(mt[0] + '/', ''))) {
+                caches.open(SW_CACHE_NAME).then(function (cache) {
                   cache.put(event.request, res)
                 }).catch(function (err) {
                   console.log(err)

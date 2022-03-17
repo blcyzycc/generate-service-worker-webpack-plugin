@@ -59,12 +59,12 @@ self.addEventListener('fetch', function (event) {
         return response
       } else {
         // console.log('没有缓存，返回网络文件', event.request.url);
-        return fetch(event.request).then(res => {
+        return fetch(event.request).then(function(res) {
           // 缓存文件
           if (event.request.method === 'GET') {
             // 注意：跨域资源 url 为空，所以跨域资源不会缓存
-            let url = res.url || ''
-            let mt = url.match(/^https?:\/\/[^\/]+/)
+            var url = res.url || ''
+            var mt = url.match(/^https?:\/\/[^\/]+/)
 
             if (mt && mt[0]) {
               // 如果的响应 url 是文件格式，并且路径在 SW_CACHE_FILES 中，则缓存文件

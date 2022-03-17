@@ -18,6 +18,10 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
       navigator.serviceWorker.register('@@SW_JS_PATH@@', { scope: './' }).then(function (reg) {
         console.log('Service Worker 成功');
 
+        // 60s内不重复检查更新，防止用户某些操作导致页面无限刷新
+        if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < 60000) return;
+        localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
+
         // 获取当前页面文件流，再根据 SW_CACHE_HASH 判断页面是否已经更新
         // 如果页面已更新，则刷新 sw 和 页面
         var headers = new Headers()
@@ -38,10 +42,6 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
           render.onload = function () {
             var r = new RegExp('@' + '@SW_CACHE_HASH=([^@]*)@' + '@')
             var match = render.result.match(r)
-
-            // 一分钟内不重复刷新
-            if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < 60000) return;
-            localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
 
             if (match && match[1]) {
               var hash = match[1]

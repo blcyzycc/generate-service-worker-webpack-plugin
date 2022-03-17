@@ -55,9 +55,8 @@ class GenerateServiceWorkerWebpackPlugin {
           swLinkJs = swLinkJs.replace(`@@INDEX_HTML_PATH@@`, key)
           // 插入 hash 值，用来判断 Service Worker 更新
           swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, `@@SW_CACHE_HASH=${hash}@@`)
-          // 去除换行
-          swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
-
+          // 去除多余的换行和空格
+          // swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
           // 压缩代码
           let swLinkJsMin = await minify(swLinkJs)
 

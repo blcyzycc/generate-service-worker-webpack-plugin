@@ -40,25 +40,21 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
             var match = render.result.match(r)
 
             // 一分钟内不重复刷新
-            if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < 60000) {
-              return
-            }
+            if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < 60000) return;
+            localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
 
             if (match && match[1]) {
               var hash = match[1]
-
               if (hash !== localStorage.getItem('SW_CACHE_HASH')) {
-                localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
                 localStorage.setItem('SW_CACHE_HASH', hash)
                 reg.unregister()
-                window.location.reload()
+                location.reload()
               }
             }
             else {
-              localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
               localStorage.removeItem('SW_CACHE_HASH')
               reg.unregister()
-              window.location.reload()
+              location.reload()
             }
           }
         })

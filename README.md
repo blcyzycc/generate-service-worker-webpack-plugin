@@ -1,7 +1,6 @@
 # generate-service-worker-webpack-plugin
 
-源码地址：https://github.com/blcyzycc/generate-service-worker-webpack-plugin
-
+Vue 项目集成 Service Worker 开启离线缓存。
 
 #### 介绍
 

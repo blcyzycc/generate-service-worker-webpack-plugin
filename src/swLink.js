@@ -5,63 +5,35 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
   if ('serviceWorker' in navigator) {
     var clear = localStorage.clear
 
-    // 改写 localStorage.clear 方法，防止用户进入应用执行 clear 导致 SW_CACHE_HASH 丢失，重复刷新页面
+    // 改写 localStorage.clear 方法，确保永久记录用户每次刷新的时间
     localStorage.clear = function () {
-      var HASH = localStorage.getItem('SW_CACHE_HASH')
       var TIME = localStorage.getItem('SW_CACHE_HASH_TIME')
       clear.call(localStorage)
-      localStorage.setItem('SW_CACHE_HASH', HASH)
       localStorage.setItem('SW_CACHE_HASH_TIME', TIME)
     }
 
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('@@SW_JS_PATH@@', { scope: './' }).then(function (reg) {
-        console.log('Service Worker 成功');
+    navigator.serviceWorker.register('@@SW_JS_PATH@@', { scope: './' }).then(function (reg) {
+      console.log('Service Worker 注册成功');
 
-        // 60s内不重复检查更新，防止用户某些操作导致页面无限刷新
-        if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < 60000) return;
-        localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
+      // 有效时间内不重复检查更新，防止某些情况导致页面无限执行 reload 方法
+      if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < '@@SW_EFFECTIVE_TIME@@') return;
+      localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
 
-        // 获取当前页面文件流，再根据 SW_CACHE_HASH 判断页面是否已经更新
-        // 如果页面已更新，则刷新 sw 和 页面
-        var headers = new Headers()
+      window.SW_CACHE_HASH_UPDATE = function (hash) {
+        if (window.SW_CACHE_HASH !== hash) {
+          console.log('项目更新：' + window.SW_CACHE_HASH + '!==' + hash)
+          reg.unregister()
+          location.reload()
+        }
+      }
 
-        headers.append('SW_NO_CACHE', 'true') // 设置请求头，用于 fetch 请求拦截判断，从网络请求文件，不取缓存
-        headers.append('Pragma', 'no-cache')
-        headers.append('Cache-Control', 'no-cache')
-        headers.append('Expires', '0') // 过期时间为 0 表示立即过期
+      var script = document.createElement('script')
+      script.setAttribute('src', '@@SW_HASH_JS_PATH@@')
+      document.head.appendChild(script)
 
-        fetch('@@INDEX_HTML_PATH@@', {
-          headers: headers,
-        }).then(function (res) {
-          return res.blob()
-        }).then(function (blob) {
-          var render = new FileReader()
-          render.readAsText(blob, 'utf8')
-
-          render.onload = function () {
-            var r = new RegExp('@' + '@SW_CACHE_HASH=([^@]*)@' + '@')
-            var match = render.result.match(r)
-
-            if (match && match[1]) {
-              var hash = match[1]
-              if (hash !== localStorage.getItem('SW_CACHE_HASH')) {
-                localStorage.setItem('SW_CACHE_HASH', hash)
-                reg.unregister()
-                location.reload()
-              }
-            }
-            else {
-              localStorage.removeItem('SW_CACHE_HASH')
-              reg.unregister()
-              location.reload()
-            }
-          }
-        })
-      }).catch(function (err) {
-        // 注册失败:
-        console.log('Service Worker 注册失败', err)
-      });
+    }).catch(function (err) {
+      // 注册失败:
+      console.log('Service Worker 注册失败', err)
     });
   }
 })();

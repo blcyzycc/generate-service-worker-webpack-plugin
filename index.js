@@ -5,7 +5,7 @@
 
 const fs = require('fs')
 const path = require('path')
-const { minify } = require("terser")
+const { minify } = require('terser')
 
 class GenerateServiceWorkerWebpackPlugin {
   constructor(options = {}) {
@@ -13,15 +13,24 @@ class GenerateServiceWorkerWebpackPlugin {
     // .appcache 文件名称
     this.options.name = options.name || 'sw'
     // 应用版本号
-    this.options.version = options.version || '1.0.0'
+    this.options.version = options.version || ''
+    // 包含有 SW_CACHE_HASH 值的文件的路径，可以提供完整的 href 链接，不指定则默认为当前渲染页面的 html 文件
+    this.options.publicUrl = options.publicUrl || ''
     // 此正则匹配到的文件，不进行缓存
     this.options.excache = options.excache || null
-    // 此正则匹配到的文件，不进行缓存
+    // 包含此字符串的文件，不进行缓存
     this.options.cacheFlag = options.cacheFlag || ''
     // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
     this.options.size = options.size || [0, 1024 * 1024 * 10]
+    // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 30s
+    this.options.time = options.time !== undefined ? options.time : 30000
     // 提供自定义过滤方法
     this.options.filter = options.filter
+
+    // 添加末尾的 /
+    if (this.options.publicUrl) {
+      this.options.publicUrl = this.options.publicUrl.replace(/(\/$|$)/, '/')
+    }
   }
 
   apply(compiler) {
@@ -36,7 +45,8 @@ class GenerateServiceWorkerWebpackPlugin {
       // source() 返回文件内容
       // size() 返回文件大小。
       let name = This.options.name + '.js'
-      let hash = compilation.hash.substring(0, 8)
+      let hash = compilation.hash.substring(0, 8) + This.options.version
+      let hashFileName = 'sw.hash.js'
       let cacheFiles = []
 
       // 遍历打包后的文件列表
@@ -44,23 +54,23 @@ class GenerateServiceWorkerWebpackPlugin {
         let source = compilation.assets[key].source()
 
         if (/\.html$/.test(key)) {
-          // let publicPath = key.split('/').map(() => '../').join('').replace('../', '') // 得到需要引入的文件相对于 html 文件的路径
           let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
-
           let swLinkJs = fs.readFileSync(path.join(__dirname, 'src/swLink.js'), 'utf-8').toString()
 
-          // 插入 sw.js 路径
+          // 写入 sw.js 的路径
           swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, publicPath + name)
-          // 插入 index.html 路径
-          swLinkJs = swLinkJs.replace(`@@INDEX_HTML_PATH@@`, key)
-          // 插入 hash 值，用来判断 Service Worker 更新
-          swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, `@@SW_CACHE_HASH=${hash}@@`)
+          // 写入 sw.hash.js 的路径
+          swLinkJs = swLinkJs.replace(`@@SW_HASH_JS_PATH@@`, publicPath + hashFileName)
+          // 写入 hash 值，用来判断 Service Worker 更新
+          swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, hash)
+          // 写入有效时间
+          swLinkJs = swLinkJs.replace(`'@@SW_EFFECTIVE_TIME@@'`, This.options.time)
           // 去除多余的换行和空格
           // swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
           // 压缩代码
           let swLinkJsMin = await minify(swLinkJs)
 
-          // 插入 sw.js 文件引入标签到 html 文件头部
+          // 将 sw.js 标签，插入 html 文件头部
           let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
 
           compilation.assets[key] = {
@@ -72,7 +82,6 @@ class GenerateServiceWorkerWebpackPlugin {
             }
           }
         }
-
 
         let size = compilation.assets[key].size()
         let max = Math.max(...This.options.size)
@@ -102,15 +111,17 @@ class GenerateServiceWorkerWebpackPlugin {
 
       let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()
 
-      // 插入版本号
-      swJs = swJs.replace(`@@version@@`, `version ${This.options.version}`)
-      // 插入缓存去名称
-      swJs = swJs.replace(`'@@SW_CACHE_NAME@@'`, `'cache_${hash}'`)
-      // 插入需要离线缓存文件的路径集合
+      // 写入缓存去名称
+      swJs = swJs.replace(`'@@SW_CACHE_NAME@@'`, `'${hash}'`)
+      // 写入项目目录路径
+      swJs = swJs.replace(`@@PUBLIC_URL@@`, This.options.publicUrl)
+      // 写入需要离线缓存文件的路径集合
       swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
 
       // 压缩代码
       let swJsMin = await minify(swJs)
+      swJsMin.code = `// version ${This.options.version}\n` + swJsMin.code
+      swJsMin.code = `// @@SW_CACHE_HASH=${hash}@@\n` + swJsMin.code
 
       // 添加 sw.js 文件，sw.js 文件将放在根目录下
       compilation.assets[name] = {
@@ -119,6 +130,18 @@ class GenerateServiceWorkerWebpackPlugin {
         },
         size() {
           return swJsMin.code.length
+        }
+      }
+
+      let swHashJs = `window.SW_CACHE_HASH_UPDATE('${hash}');`
+
+      // 添加 sw.hash.js 文件，sw.hash.js 文件将放在根目录下
+      compilation.assets[hashFileName] = {
+        source() {
+          return swHashJs
+        },
+        size() {
+          return swHashJs.length
         }
       }
 

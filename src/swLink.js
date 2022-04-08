@@ -19,18 +19,26 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
       if (Date.now() - localStorage.getItem('SW_CACHE_HASH_TIME') < '@@SW_EFFECTIVE_TIME@@') return;
       localStorage.setItem('SW_CACHE_HASH_TIME', Date.now())
 
-      window.SW_CACHE_HASH_UPDATE = function (hash) {
-        if (window.SW_CACHE_HASH !== hash) {
-          console.log('项目更新：' + window.SW_CACHE_HASH + '!==' + hash)
-          reg.unregister()
-          location.reload()
+      fetch('@@SW_HASH_FILE_PATH@@').then(function (res) {
+        return res.blob()
+      }).then(function (blob) {
+        var render = new FileReader()
+        render.readAsText(blob, 'utf8')
+
+        render.onload = function () {
+          var hash = render.result
+          if (window.SW_CACHE_HASH !== hash) {
+            console.log('项目更新：' + window.SW_CACHE_HASH + '!==' + hash)
+            reg.unregister()
+            location.reload()
+          }
+          else if (!hash) {
+            localStorage.removeItem('SW_CACHE_HASH')
+            reg.unregister()
+            location.reload()
+          }
         }
-      }
-
-      var script = document.createElement('script')
-      script.setAttribute('src', '@@SW_HASH_JS_PATH@@')
-      document.head.appendChild(script)
-
+      })
     }).catch(function (err) {
       // 注册失败:
       console.log('Service Worker 注册失败', err)

@@ -46,7 +46,7 @@ class GenerateServiceWorkerWebpackPlugin {
       // size() 返回文件大小。
       let name = This.options.name + '.js'
       let hash = compilation.hash.substring(0, 8) + This.options.version
-      let hashFileName = 'sw.hash.js'
+      let hashFileName = this.options.name + '.hash'
       let cacheFiles = []
 
       // 遍历打包后的文件列表
@@ -60,7 +60,7 @@ class GenerateServiceWorkerWebpackPlugin {
           // 写入 sw.js 的路径
           swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, publicPath + name)
           // 写入 sw.hash.js 的路径
-          swLinkJs = swLinkJs.replace(`@@SW_HASH_JS_PATH@@`, publicPath + hashFileName)
+          swLinkJs = swLinkJs.replace(`@@SW_HASH_FILE_PATH@@`, publicPath + hashFileName)
           // 写入 hash 值，用来判断 Service Worker 更新
           swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, hash)
           // 写入有效时间
@@ -71,7 +71,7 @@ class GenerateServiceWorkerWebpackPlugin {
           let swLinkJsMin = await minify(swLinkJs)
 
           // 将 sw.js 标签，插入 html 文件头部
-          let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
+          let html = source.replace(/(<\/head)/, `<script>${swLinkJs}</script>$1`)
 
           compilation.assets[key] = {
             source() {
@@ -120,7 +120,6 @@ class GenerateServiceWorkerWebpackPlugin {
 
       // 压缩代码
       let swJsMin = await minify(swJs)
-      swJsMin.code = `// version ${This.options.version}\n` + swJsMin.code
       swJsMin.code = `// @@SW_CACHE_HASH=${hash}@@\n` + swJsMin.code
 
       // 添加 sw.js 文件，sw.js 文件将放在根目录下
@@ -133,7 +132,7 @@ class GenerateServiceWorkerWebpackPlugin {
         }
       }
 
-      let swHashJs = `window.SW_CACHE_HASH_UPDATE('${hash}');`
+      let swHashJs = `${hash}`
 
       // 添加 sw.hash.js 文件，sw.hash.js 文件将放在根目录下
       compilation.assets[hashFileName] = {

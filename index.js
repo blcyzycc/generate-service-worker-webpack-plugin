@@ -43,6 +43,7 @@ class GenerateServiceWorkerWebpackPlugin {
       // 值为文件对应的操作方法
       // source() 返回文件内容
       // size() 返回文件大小。
+      let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
       let name = This.options.name + '.js'
       let hash = `${compilation.hash.substring(0, 8)}_${This.options.version}`
       let hashFileName = this.options.name + '.hash'
@@ -53,7 +54,6 @@ class GenerateServiceWorkerWebpackPlugin {
         let source = compilation.assets[key].source()
 
         if (/\.html$/.test(key)) {
-          let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
           let swLinkJs = fs.readFileSync(path.join(__dirname, 'src/swLink.js'), 'utf-8').toString()
 
           // 写入 sw.js 的路径
@@ -116,6 +116,8 @@ class GenerateServiceWorkerWebpackPlugin {
       // swJs = swJs.replace(`@@PUBLIC_URL@@`, This.options.publicUrl)
       // 写入需要离线缓存文件的路径集合
       swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
+      // 写入 sw.hash.js 的路径
+      swJs = swJs.replace(`@@SW_HASH_FILE_PATH@@`, publicPath + hashFileName)
 
       // 压缩代码
       let swJsMin = await minify(swJs)

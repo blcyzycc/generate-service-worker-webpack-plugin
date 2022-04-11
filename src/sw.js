@@ -5,6 +5,7 @@
 // 缓存区名称，打包时传入，值为字符串
 const SW_CACHE_HASH = '@@SW_CACHE_HASH@@'
 
+// sw.js 文件名称
 const SW_JS_NAME = '@@SW_JS_NAME@@'
 
 // 项目目录地址，根据 sw.js 运行路径得出

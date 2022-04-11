@@ -5,8 +5,10 @@
 // 缓存区名称，打包时传入，值为字符串
 const SW_CACHE_HASH = '@@SW_CACHE_HASH@@'
 
+const SW_JS_NAME = '@@SW_JS_NAME@@'
+
 // 项目目录地址，根据 sw.js 运行路径得出
-const PUBLIC_URL = self.location.href.replace(self.location.pathname, '/')
+const PUBLIC_URL = self.serviceWorker.scriptURL.replace(SW_JS_NAME, '')
 
 // 需要离线缓存的文件，在参与打包时会替换为形如 ['index.html', 'js/index.js'] 的数组
 const SW_CACHE_FILES = '@@SW_CACHE_FILES@@'
@@ -31,8 +33,6 @@ const verifyHash = function () {
   if (Date.now() - updateTime < effectiveTime) return;
   updateTime = Date.now()
 
-  console.log('verifyHash()');
-
   fetch('@@SW_HASH_FILE_PATH@@', {
     headers: {
       'SW_NO_CACHE': 'true',
@@ -49,7 +49,7 @@ const verifyHash = function () {
 
       // hash 不存在，或与已改变
       if (!hash || SW_CACHE_HASH !== hash) {
-        console.log('版本更新了：' + SW_CACHE_HASH + '==>' + hash);
+        console.log('版本更新：' + SW_CACHE_HASH + '==>' + hash);
 
         // 删除缓存，注销 Service Worker，并刷新页面
         caches.delete(SW_CACHE_HASH).then(function () {
@@ -81,6 +81,10 @@ const verifyHash = function () {
     // 请求不到 sw.hash，先注销 Service Worker，因为用户可能放弃使用 Service Worker
     if (err.message === 'Failed to fetch') {
       self.registration.unregister()
+      // 如果客户端网络正常，连缓存都清掉
+      if (self.navigator.onLine) {
+        caches.delete(SW_CACHE_HASH)
+      }
     }
   })
 }
@@ -91,7 +95,7 @@ const waitPageRespond = function () {
   // 一段时间后检查页面是否响应，swRespond 还为真，说明页面无关联
   setTimeout(function () {
     if (swRespond) {
-      console.log('页面无响应，删除缓存，并注销 Service Worker');
+      // console.log('页面无响应，删除缓存，并注销 Service Worker');
       // 删除缓存，并注销 Service Worker
       caches.delete(SW_CACHE_HASH).then(function () {
         self.registration.unregister()

@@ -64,7 +64,7 @@ class GenerateServiceWorkerWebpackPlugin {
           let swLinkJsMin = await minify(swLinkJs)
 
           // 将 sw.js 标签，插入 html 文件头部
-          let html = source.replace(/(<\/head)/, `<script>${swLinkJs}</script>$1`)
+          let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
 
           compilation.assets[key] = {
             source() {
@@ -105,11 +105,13 @@ class GenerateServiceWorkerWebpackPlugin {
       let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()
 
       // 写入缓存去名称
-      swJs = swJs.replace(`'@@SW_CACHE_HASH@@'`, `'${hash}'`)
+      swJs = swJs.replace(`@@SW_CACHE_HASH@@`, `${hash}`)
       // 写入项目目录路径
       // swJs = swJs.replace(`@@PUBLIC_URL@@`, This.options.publicUrl)
       // 写入需要离线缓存文件的路径集合
       swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
+      // 写入 sw.hash.js 的路径
+      swJs = swJs.replace(`@@SW_JS_NAME@@`, name)
       // 写入 sw.hash.js 的路径
       swJs = swJs.replace(`@@SW_HASH_FILE_PATH@@`, publicPath + hashFileName)
       // 写入有效时间

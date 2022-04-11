@@ -14,22 +14,18 @@ class GenerateServiceWorkerWebpackPlugin {
     this.options.name = options.name || 'sw'
     // 应用版本号
     this.options.version = options.version || ''
-    // 包含有 SW_CACHE_HASH 值的文件的路径，可以提供完整的 href 链接，不指定则默认为当前渲染页面的 html 文件
-    // this.options.publicUrl = options.publicUrl || ''
     // 此正则匹配到的文件，不进行缓存
     this.options.excache = options.excache || null
     // 包含此字符串的文件，不进行缓存
     this.options.cacheFlag = options.cacheFlag || ''
     // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
     this.options.size = options.size || [0, 1024 * 1024 * 10]
-    // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 30s
-    this.options.time = options.time !== undefined ? options.time : 30000
+    // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 10s
+    this.options.time = options.time !== undefined ? options.time : 10000
     // 提供自定义过滤方法
     this.options.filter = options.filter
 
-    // if (this.options.publicUrl) {
-    //   this.options.publicUrl = this.options.publicUrl.replace(/(\/$|$)/, '/')
-    // }
+    this.options.time = Math.max(this.options.time, 0)
   }
 
   apply(compiler) {
@@ -62,8 +58,6 @@ class GenerateServiceWorkerWebpackPlugin {
           swLinkJs = swLinkJs.replace(`@@SW_HASH_FILE_PATH@@`, publicPath + hashFileName)
           // 写入 hash 值，用来判断 Service Worker 更新
           swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, hash)
-          // 写入有效时间
-          swLinkJs = swLinkJs.replace(`'@@SW_EFFECTIVE_TIME@@'`, This.options.time)
           // 去除多余的换行和空格
           // swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
           // 压缩代码
@@ -111,13 +105,15 @@ class GenerateServiceWorkerWebpackPlugin {
       let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()
 
       // 写入缓存去名称
-      swJs = swJs.replace(`'@@SW_CACHE_NAME@@'`, `'${hash}'`)
+      swJs = swJs.replace(`'@@SW_CACHE_HASH@@'`, `'${hash}'`)
       // 写入项目目录路径
       // swJs = swJs.replace(`@@PUBLIC_URL@@`, This.options.publicUrl)
       // 写入需要离线缓存文件的路径集合
       swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
       // 写入 sw.hash.js 的路径
       swJs = swJs.replace(`@@SW_HASH_FILE_PATH@@`, publicPath + hashFileName)
+      // 写入有效时间
+      swJs = swJs.replace(`'@@SW_EFFECTIVE_TIME@@'`, This.options.time)
 
       // 压缩代码
       let swJsMin = await minify(swJs)

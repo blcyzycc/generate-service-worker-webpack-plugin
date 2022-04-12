@@ -20,7 +20,7 @@ class GenerateServiceWorkerWebpackPlugin {
     this.options.cacheFlag = options.cacheFlag || ''
     // 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
     this.options.size = options.size || [0, 1024 * 1024 * 10]
-    // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 10s
+    // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 10000ms
     this.options.time = options.time !== undefined ? options.time : 10000
     // 提供自定义过滤方法
     this.options.filter = options.filter
@@ -123,12 +123,10 @@ class GenerateServiceWorkerWebpackPlugin {
       // 添加 sw.js 文件，sw.js 文件将放在根目录下
       compilation.assets[name] = {
         source() {
-          return swJs
-          // return swJsMin.code
+          return swJsMin.code
         },
         size() {
-          return swJs.length
-          // return swJsMin.code.length
+          return swJsMin.code.length
         }
       }
 

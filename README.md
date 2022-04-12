@@ -15,24 +15,25 @@ Vue项目 或基于 Webpack 搭建的单页面应用，在打包时自动生成�
 Node.js 以及 JavaScript
 
 
-##### 项目更新思路：
+##### Service Worker 版本更新思路：
 ```
 /*
 打包之后 sw.js、sw.hash、index.html 中都会保存有一个相同的 hash 值
-触发检查更新方式有两种，在某些情况下会无法触发，所以两种一起使用：
-1、进入页面 index.html 先 postMessage 到 sw.js，sw.js 收到 message 立即检查是否更新，并刷新有效时间；
-2、若 sw.js 未收到 message，则在 发生 fetch 请求时判断 clientId 是否变动，如果变动则检查更新，并刷新有效时间；
-（有效时间内不重复检查更新。用户每次刷新窗口，clientId 都会改变）
+触发检查更新方式有两种，由index.html触发的如果用户弃用此插件，会导致无法触发，所以两种一起使用：
+1、进入页面 index.html 先发送 postMessage 到 sw.js，sw.js 收到 message 立即检查是否更新，并刷新有效时间；（有效时间内不会再次检查更新）
+2、若 sw.js 未收到 message，则在发生 fetch 请求时判断 clientId 是否变动，如果变动则检查更新，并刷新有效时间；（用户每次刷新窗口，clientId 都会改变）
 
 检查更新的思路如下：<br>
 1、请求 sw.hash 比较返回结果与当前 sw.js 中的是否相同
-    相同：向页面发起 postMessage，页面接收后比较 hash 是否相同，如果相同，则离线缓存为最新版本，可用。
-         如果不同则向 sw.js 发起 postMessage，sw.js 收到后直接清除缓存，index页面在之后刷新；
-         如果向页面发起 postMessage，页面没有响应 sw.js，可能用户已弃用 sw.js，立即注销 sw.js，清除缓存；
+    相同：向页面发起 postMessage，页面接收把当前页面的 hash 发送回 sw.js，再比较 hash 是否相同，
+         如果相同，则离线缓存为最新版本，可用。
+         如果不同则立即清除缓存并注销 sw.js；
+         如果向页面发起 postMessage，页面在500ms内没有响应 sw.js，可能用户已弃用 sw.js，立即清除缓存并注销 sw.js；
     不同：说明项目已经更新，清除所有缓存，注销 sw.js，刷新页面；
 2、如果 请求 sw.hash 失败
-    判断用户端网络是否正常，如果网络正常，则说明此页面可能已经放弃使用 sw.js，先注销 sw.js，保留缓存；
-    如果网络也不正常，则直接使用离线缓存即可；
+    判断用户端网络是否正常，
+    如果网络正常，则说明此项目可能已经放弃使用 sw.js，先注销 sw.js，保留缓存；
+    如果网络断开连接，则直接使用离线缓存即可；
 */
 ```
 
@@ -57,6 +58,7 @@ cacheFlag 可选，在项目文件中加入 flag，打包时匹配文件中是�
 excache   可选，匹配文件名，成功则不进行离线缓存。
 size      可选，对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件。
           excache 和 size 会共同作用；
+time      有效时间，在此时间内不再进行检查更新。单位（ms），默认 10000ms。
 filter    可选，自定义过滤函数，有两个参数，返回文件路径列表。
             cacheFiles    参数1：缓存文件名列表，
             assets        参数2：compilation.assets

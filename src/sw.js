@@ -14,9 +14,6 @@ const PUBLIC_URL = self.serviceWorker.scriptURL.replace(SW_JS_NAME, '')
 // 需要离线缓存的文件，在参与打包时会替换为形如 ['index.html', 'js/index.js'] 的数组
 const SW_CACHE_FILES = '@@SW_CACHE_FILES@@'
 
-// fetch 请求文件次数
-let fetchNum = 0
-
 // 上次检查更新的时间
 let updateTime = 0
 
@@ -194,8 +191,8 @@ self.addEventListener('fetch', function (evt) {
           let ext = url.split('.').pop()
           let cache = false
 
-          // 请求的是当前页面，直接缓存 html 页面
-          if (fetchNum === 0 && contentType.indexOf('text/html') >= 0) {
+          // 返回的 html 文件，并且 url 不是文件路径，直接缓存页面
+          if (contentType.indexOf('text/html') >= 0 && /\/[^.]+$/.test(url)) {
             cache = true
             fetchNum++
           }

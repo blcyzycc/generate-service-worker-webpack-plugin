@@ -194,7 +194,6 @@ self.addEventListener('fetch', function (evt) {
           // 返回的 html 文件，并且 url 不是文件路径，直接缓存页面
           if (contentType.indexOf('text/html') >= 0 && /\/[^.]+$/.test(url)) {
             cache = true
-            fetchNum++
           }
           // 其它文件需要匹配 SW_CACHE_FILES 中的路径决定是否缓存
           else if (LastModified) {

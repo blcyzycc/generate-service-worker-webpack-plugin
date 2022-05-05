@@ -23,7 +23,7 @@ Node.js 以及 JavaScript
 1、进入页面 index.html 先发送 postMessage 到 sw.js，sw.js 收到 message 立即检查是否更新，并刷新有效时间；（有效时间内不会再次检查更新）
 2、若 sw.js 未收到 message，则在发生 fetch 请求时判断 clientId 是否变动，如果变动则检查更新，并刷新有效时间；（用户每次刷新窗口，clientId 都会改变）
 
-检查更新的思路如下：<br>
+检查更新的思路如下：
 1、请求 sw.hash 比较返回结果与当前 sw.js 中的是否相同
     相同：向页面发起 postMessage，页面接收把当前页面的 hash 发送回 sw.js，再比较 hash 是否相同，
          如果相同，则离线缓存为最新版本，可用。

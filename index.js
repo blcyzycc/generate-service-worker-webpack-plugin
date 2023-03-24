@@ -33,7 +33,7 @@ class GenerateServiceWorkerWebpackPlugin {
 
     // 监听 emit 事件，因为发生 emit 事件时所有模块的转换和代码块对应的文件已经生成好，
     // 需要输出的资源即将输出，因此 emit 事件是修改 Webpack 输出资源的最后时机。
-    compiler.plugin('emit', async (compilation, callback) => {
+    compiler.hooks.emit.tap('GenerateServiceWorkerWebpackPlugin', async (compilation, callback) => {
       // 所有需要输出的资源会存放在 compilation.assets 中，
       // compilation.assets 是一个键值对，键为需要输出的文件名称，
       // 值为文件对应的操作方法
@@ -41,7 +41,7 @@ class GenerateServiceWorkerWebpackPlugin {
       // size() 返回文件大小。
       let publicPath = compiler.options.output.publicPath // 得到需要引入的文件相对于 html 文件的路径
       let name = This.options.name + '.js'
-      let hash = `${compilation.hash.substring(0, 8)}_${This.options.version}`
+      let hash = `${String(Math.random()).substring(2, 10)}_${This.options.version}`
       let hashFileName = this.options.name + '.hash'
       let cacheFiles = []
 
@@ -141,8 +141,6 @@ class GenerateServiceWorkerWebpackPlugin {
           return swHashJs.length
         }
       }
-
-      callback()
     })
   }
 }

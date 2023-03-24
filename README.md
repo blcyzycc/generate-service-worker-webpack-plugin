@@ -1,6 +1,7 @@
 # generate-service-worker-webpack-plugin
 
 Vue 项目集成 Service Worker 开启离线缓存。
+Webpack5.x 请使用此版本v2.0.2，Webpack4.x及以前的版本，使用v2.0.1
 
 #### 介绍
 
@@ -55,7 +56,7 @@ cacheFlag 可选，在项目文件中加入 flag，打包时匹配文件中是�
           <div sw="ServiceWorkerFlag"></div>
           2、如果是js文件，把 cacheFlag 赋值到 window 对象的属性，如下：
           window.sw = 'ServiceWorkerFlag
-excache   可选，匹配文件名，成功则不进行离线缓存。
+excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的文件不进行离线缓存。
 size      可选，对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件。
           excache 和 size 会共同作用；
 time      有效时间，在此时间内不再进行检查更新。单位（ms），默认 10000ms。
@@ -80,6 +81,7 @@ module.exports = {
         name: 'sw',
         version: '1.0.1',
         cacheFlag: 'ServiceWorkerFlag',
+        // excache: /ckeditor/, // 路径包含ckeditor的文件，不缓存
         excache: /(\.map$|\.mp4$)/,
         size: [0, 1024 * 1024],
       }));

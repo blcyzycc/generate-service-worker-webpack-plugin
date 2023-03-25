@@ -84,8 +84,8 @@ module.exports = {
         name: 'sw',
         version: '1.0.1',
         cacheFlag: 'ServiceWorkerFlag',
-        // excache: /ckeditor/, // 路径包含ckeditor的文件，不缓存
-        excache: /(\.map$|\.mp4$)/,
+        // excache: /ckeditor/, // 路径包含ckeditor的文件不缓存
+        excache: /(\.mp3$|\.mp4$)/, // .mp3 和 .mp4 后缀的文件不缓存
         size: [0, 1024 * 1024],
       }));
     }

@@ -2,7 +2,7 @@
 
 Vue 项目集成 Service Worker 开启离线缓存。<br>
 
-Webpack5.x 请使用此版本v2.0.2 <br>
+Webpack5.x 请使用此版本v2.1.0 <br>
 
 Webpack4.x 及以前的版本，使用v2.0.1 <br>
 

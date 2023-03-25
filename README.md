@@ -9,9 +9,9 @@ Webpack4.x 及以前的版本，使用v2.0.1 <br>
 #### 介绍
 
 Vue项目 或基于 Webpack 搭建的单页面应用，在打包时自动生成并插入 Service Worker 文件。<br>
-网站部署后，用户进入网站会自动安装 Service Worker，并按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
+网站部署后，用户进入网站会自动安装 Service Worker，按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
 目前不支持跨域资源缓存。<br>
-您的项目要有 https 协议才能使 Service Worker 生效。<br>
+项目要有 https 协议才能使 Service Worker 生效。<br>
 
 
 #### 软件架构

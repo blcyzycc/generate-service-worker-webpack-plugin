@@ -87,7 +87,6 @@ class GenerateServiceWorkerWebpackPlugin {
               // 将 sw.js 标签，插入 html 文件头部
               let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
 
-              // compilation.updateAsset(key, new RawSource(html));
               assets[key] = new RawSource(html)
             }
 
@@ -114,7 +113,7 @@ class GenerateServiceWorkerWebpackPlugin {
 
           // 加入过滤函数，方便自定义筛选规则
           if (This.options.filter) {
-            cacheFiles = This.options.filter(cacheFiles, assets, RawSource)
+            This.options.filter(cacheFiles, assets, RawSource)
           }
 
           let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()
@@ -136,13 +135,11 @@ class GenerateServiceWorkerWebpackPlugin {
           let swJsMin = await minify(swJs)
 
           // 添加 sw.js 文件，sw.js 文件将放在根目录下
-          // compilation.emitAsset(name, new RawSource(swJsMin.code))
           assets[name] = new RawSource(swJsMin.code)
 
           let swHashJs = `${hash}`
 
           // 添加 sw.hash.js 文件，sw.hash.js 文件将放在根目录下
-          // compilation.emitAsset(hashFileName, new RawSource(swHashJs))
           assets[hashFileName] = new RawSource(swHashJs)
         }
       )

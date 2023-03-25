@@ -60,10 +60,9 @@ cacheFlag 可选，打包时匹配文件内容中是否包此 flag，有则离�
           2、如果是js文件，在不影响程序使用的情况下，把 cacheFlag 赋值到 window 对象 或 其他全局对象内，如下：
           window.sw = 'ServiceWorkerFlag'
 excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的文件不进行离线缓存。
-size      可选，对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件。
-          excache 和 size 会共同作用；
-time      有效时间，在此时间内不再进行检查更新。单位（ms），默认 10000ms。
-filter    可选，自定义过滤函数，有两个参数，返回文件路径列表。
+size      可选，允许缓存的文件大小范围。单位：字节。默认缓存 0 ~ 10M 内的文件。
+time      缓存有效时间，此时间内不再进行检查和更新。单位（ms），默认 10000ms。
+filter    可选，自定义过滤函数，有两个参数，返回 离线缓存文件列表 和 webapck assets，可自行处理文件内容。
             cacheFiles    参数1：缓存文件名列表，
             assets        参数2：compilation.assets
 ```
@@ -83,10 +82,10 @@ module.exports = {
       plugins.push(new GenerateServiceWorkerWebpackPlugin({
         name: 'sw',
         version: '1.0.1',
-        cacheFlag: 'ServiceWorkerFlag',
-        // excache: /ckeditor/, // 路径包含ckeditor的文件不缓存
-        excache: /(\.mp3$|\.mp4$)/, // .mp3 和 .mp4 后缀的文件不缓存
-        size: [0, 1024 * 1024],
+        cacheFlag: 'ServiceWorkerFlag', // 缓存内容中包含 ServiceWorkerFlag 字符串的文件
+        excache: /(edit\/|\.mp4$)/, // 不缓存 edit目录下的所有文件 和 .mp4 后缀的文件
+        size: [0, 1024 * 1024 * 10], // 只缓存 10m 以内的文件
+        time: 1000*60, // 1分钟内不再检查更新
       }));
     }
 
@@ -133,24 +132,23 @@ filter 函数的 assets 参数是 Webpack 打包时 emit 事件的 compilation.a
 plugins.push(new GenerateServiceWorkerWebpackPlugin({
   name: 'sw',
   version: '1.0.1',
-  filter: function (cacheFiles, assets) {
+  filter: function (cacheFiles, assets, RawSource) {
     // 遍历文件列表，可在此修改打包后的代码
     for (let url in assets) {
+      let source = assets[url].source()
+
+      if (typeof source === 'object') {
+        source = source.toString('utf-8')
+      }
+
       // 判断是否为 html 文件
       if (/\.html$/.test(url)) {
-        let source = assets[url].source()
-
         // 将页面的 title 替换为 hello world
         source = source.replace(/(<title[^>]*>)(.*)(<\/title[^>]*>)/, '$1hello world$3')
 
-        assets[url] = {
-          source() {
-            return source
-          },
-          size() {
-            return source.length
-          }
-        }
+        // const { RawSource } = require('webpack-sources')
+        // 插件内部已经引入了 RawSource 包，直接暴露出来以供使用
+        assets[url] = new RawSource(source)
       }
     }
   }

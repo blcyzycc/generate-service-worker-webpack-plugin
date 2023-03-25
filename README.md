@@ -52,13 +52,13 @@ npm install -D generate-service-worker-webpack-plugin
 ```
 name      可选，打包之后 Service Worker 文件的名称，默认 sw，全名 sw.js；
 version   可选，打包之后 Service Worker 的版本号，默认 1.0.0；
-cacheFlag 可选，在项目文件中加入 flag，打包时匹配文件中是否包含此 flag，有则缓存，且此配置具有最高优先级；
-          注意由于 webpack 打包会 tree shaking，要避免 cacheFlag 打包时被移除，
-          可以参考我的做法，
-          1、如果是模板文件，可以把 cacheFlag 写入DOM元素属性中，如下：
+cacheFlag 可选，打包时匹配文件内容中是否包此 flag，有则离线缓存。
+          需要你手动在项目文件中加入 flag 字符串，且此配置具有最高优先级。
+          注意由于 webpack 打包会自行 tree shaking 清除无用代码，要避免 flag 打包时被清除，可以参考我的做法：
+          1、如果文件中有 html 代码，可以把 cacheFlag 写入DOM元素属性中，避免被清除，如下：
           <div sw="ServiceWorkerFlag"></div>
-          2、如果是js文件，把 cacheFlag 赋值到 window 对象的属性，如下：
-          window.sw = 'ServiceWorkerFlag
+          2、如果是js文件，在不影响程序使用的情况下，把 cacheFlag 赋值到 window 对象 或 其他全局对象内，如下：
+          window.sw = 'ServiceWorkerFlag'
 excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的文件不进行离线缓存。
 size      可选，对需要缓存的文件大小进行判断，符合条件则缓存。单位：字节。默认缓存 0 ~ 10M 内的文件。
           excache 和 size 会共同作用；

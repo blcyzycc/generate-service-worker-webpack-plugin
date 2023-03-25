@@ -1,6 +1,6 @@
 # generate-service-worker-webpack-plugin
 
-Vue 项目集成 Service Worker 开启离线缓存。<br>
+Vue应用或其它单页面应用，集成 Service Worker 开启离线缓存。<br>
 
 Webpack5.x 请使用 v2.1.x 版<br>
 

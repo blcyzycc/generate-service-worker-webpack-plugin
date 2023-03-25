@@ -114,7 +114,7 @@ class GenerateServiceWorkerWebpackPlugin {
 
           // 加入过滤函数，方便自定义筛选规则
           if (This.options.filter) {
-            cacheFiles = This.options.filter(cacheFiles, assets)
+            cacheFiles = This.options.filter(cacheFiles, assets, RawSource)
           }
 
           let swJs = fs.readFileSync(path.join(__dirname, 'src/sw.js'), 'utf-8').toString()

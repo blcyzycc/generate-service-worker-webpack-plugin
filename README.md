@@ -63,8 +63,9 @@ excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的�
 size      可选，允许缓存的文件大小范围。单位：字节。默认缓存 0 ~ 10M 内的文件。
 time      缓存有效时间，此时间内不再进行检查和更新。单位（ms），默认 10000ms。
 filter    可选，自定义过滤函数，有两个参数，返回 离线缓存文件列表 和 webapck assets，可自行处理文件内容。
-            cacheFiles    参数1：缓存文件名列表，
-            assets        参数2：compilation.assets
+            cacheFiles    参数1：缓存文件名列表，对此数组操作将直接作用缓存文件列表，注意，赋值将导致引用关系失效。
+            assets        参数2：compilation.hooks.processAssets.tap 回调函数的 assets，使用请阅读webpack5文档。
+            RawSource     插件内部已经引入了 Source 包，直接暴露出去以供使用。const { RawSource } = require('webpack-sources')
 ```
 
 
@@ -133,6 +134,9 @@ plugins.push(new GenerateServiceWorkerWebpackPlugin({
   name: 'sw',
   version: '1.0.1',
   filter: function (cacheFiles, assets, RawSource) {
+    // 只缓存前五个文件
+    cacheFiles.splice(5, cacheFiles.length - 5)
+
     // 遍历文件列表，可在此修改打包后的代码
     for (let url in assets) {
       let source = assets[url].source()

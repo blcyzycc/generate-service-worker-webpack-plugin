@@ -2,7 +2,7 @@
 
 Vue 项目集成 Service Worker 开启离线缓存。<br>
 
-Webpack5.x 请使用此版本v2.1.0 <br>
+Webpack5.x 请使用 v2.1.x 版<br>
 
 Webpack4.x 及以前的版本，使用v2.0.1 <br>
 
@@ -66,6 +66,7 @@ filter    可选，自定义过滤函数，有两个参数，返回 离线缓存
             cacheFiles    参数1：缓存文件名列表，对此数组操作将直接作用缓存文件列表，注意，赋值将导致引用关系失效。
             assets        参数2：compilation.hooks.processAssets.tap 回调函数的 assets，使用请阅读webpack5文档。
             RawSource     插件内部已经引入了 Source 包，直接暴露出去以供使用。const { RawSource } = require('webpack-sources')
+          return 的值如果是数组，将直接赋值给 cacheFiles
 ```
 
 

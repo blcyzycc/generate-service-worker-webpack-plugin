@@ -12,7 +12,7 @@ const args = process.argv.splice(2)
 // 入参处理
 const params = {
   // 项目文件目录
-  dir: 'dist',
+  output: 'dist',
   // 配置文件目录
   conf: 'sw.config.js',
 }
@@ -55,7 +55,7 @@ if (options.time < 0) {
 const max = Math.max(...options.size)
 const min = Math.min(...options.size)
 
-const output = Path.normalize(Path.join(cwd, params.dir))  // 项目文件绝对路径
+const output = Path.normalize(Path.join(cwd, params.output))  // 项目文件绝对路径
 const relative = Path.relative(cwd, output) // 项目文件相对命令运行时的路径
 const swFile = options.name + '.js'
 const hashFile = options.name + '.hash'

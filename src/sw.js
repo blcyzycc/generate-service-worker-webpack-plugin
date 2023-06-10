@@ -104,24 +104,12 @@ const waitPageRespond = function () {
 
 // 缓存静态资源，install 事件是 SW 触发的第一个事件，并且仅触发一次。
 self.addEventListener('install', function (evt) {
-  // console.log('-----------------install-----------------');
-
   // 让新的 service-worker 安装后立即变为激活状态
   self.skipWaiting()
-
-  // 立即缓存全部指定的文件
-  // evt.waitUntil(caches.open(SW_CACHE_HASH).then(function (cache) {
-  //   return cache.addAll(SW_CACHE_FILES)
-  // }))
 })
 
 /* 当此 sw.js 激活时触发 */
 self.addEventListener('activate', function (evt) {
-  // console.log('-----------------activate-----------------');
-
-  // 清空所有缓存
-  // evt.waitUntil(caches.keys().then(cacheNames => Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)))))
-
   // 更新，删除以前的缓存区文件，保留当前的
   evt.waitUntil(caches.keys().then(function (cacheNames) {
     return Promise.all(cacheNames.filter(function (cacheName) {
@@ -130,14 +118,6 @@ self.addEventListener('activate', function (evt) {
       return caches.delete(cacheName)
     }));
   }));
-
-  // 向所有窗口发消息
-  // self.clients.matchAll().then((clients) => {
-  //   console.log('self.clients.matchAll', clients);
-  //   for (let i = 0; i < clients.length; i++) {
-  //     clients[i].postMessage('xxx')
-  //   }
-  // });
 })
 
 self.addEventListener('message', function (evt) {
@@ -174,7 +154,6 @@ self.addEventListener('fetch', function (evt) {
   evt.respondWith(
     caches.match(evt.request).then(function (response) {
       let SW_NO_CACHE = evt.request.headers.get('SW_NO_CACHE')
-      let contentType = ''
 
       if (response && SW_NO_CACHE !== 'true') {
         return response
@@ -184,15 +163,14 @@ self.addEventListener('fetch', function (evt) {
         // 注意：跨域资源 res.url 为空，因此跨域资源不会缓存
         let url = res.url || ''
         let LastModified = res.headers.get('Last-Modified') // 一般返回文件才有 LastModified
-
-        contentType = res.headers.get('Content-Type') || ''
+        let contentType = res.headers.get('Content-Type') || ''
 
         if (evt.request.method === 'GET') {
           let ext = url.split('.').pop()
           let cache = false
 
           // 返回的 html 文件，并且 url 不是文件路径，直接缓存页面
-          if (contentType.indexOf('text/html') >= 0 && /\/[^.]+$/.test(url)) {
+          if (contentType.startsWith('text/html')) {
             cache = true
           }
           // 其它文件需要匹配 SW_CACHE_FILES 中的路径决定是否缓存
@@ -208,6 +186,7 @@ self.addEventListener('fetch', function (evt) {
               }
             }
           }
+
           if (cache) {
             caches.open(SW_CACHE_HASH).then(function (cache) {
               cache.put(evt.request, res)
@@ -215,6 +194,8 @@ self.addEventListener('fetch', function (evt) {
           }
         }
         return res.clone()
+      }).catch(err => {
+        console.log(err);
       })
     })
   );

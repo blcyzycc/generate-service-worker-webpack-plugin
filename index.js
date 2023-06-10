@@ -6,16 +6,15 @@
 const fs = require('fs')
 const Path = require('path')
 const { minify } = require('terser')
-const { RawSource } = require('webpack-sources')
 const cwd = process.cwd()
 const args = process.argv.splice(2)
 
 // 入参处理
 const params = {
   // 项目文件目录
-  dir: '/dist',
+  dir: 'dist',
   // 配置文件目录
-  conf: cwd + '/sw.config.js',
+  conf: 'sw.config.js',
 }
 const argsObj = {}
 args.forEach(m => {
@@ -30,20 +29,19 @@ for (let key in params) {
   }
 }
 
-const config = require(params.conf)
-const output = cwd + params.dir // 项目文件绝对路径
-const relative = Path.relative(cwd, output) // 项目文件相对命令运行时的路径
+params.conf = Path.join(cwd, params.conf)
 
+const config = require(params.conf)
 const options = {}
 // .appcache 文件名称
 options.name = config.name || 'sw'
 // 应用版本号
-options.version = config.version || '0.0.0'
+options.version = config.version || '0.0.1'
 // 此正则匹配到的文件，不进行缓存
 options.excache = config.excache || null
 // 包含此字符串的文件，不进行缓存
 options.cacheFlag = config.cacheFlag || ''
-// 只缓存文件大小在此范围内的文件，默认最大缓存文件 1024M
+// 只缓存文件大小在此范围内的文件，默认最大缓存文件 10M
 options.size = config.size || [0, 1024 * 1024 * 10]
 // 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 10000ms
 options.time = config.time === undefined ? 10000 : config.time
@@ -54,12 +52,19 @@ if (options.time < 0) {
   options.time = 0
 }
 
-let assets = travelFiles(output)
+const max = Math.max(...options.size)
+const min = Math.min(...options.size)
+
+const output = Path.normalize(Path.join(cwd, params.dir))  // 项目文件绝对路径
+const relative = Path.relative(cwd, output) // 项目文件相对命令运行时的路径
+const swFile = options.name + '.js'
+const hashFile = options.name + '.hash'
+const hash = `${String(Math.random()).substring(2, 10)}_${options.version}`
+const swFileAbs = Path.normalize(Path.join(output, swFile))
+
+const assets = travelFiles(output)
 
 const main = async () => {
-  let swName = options.name + '.js'
-  let hash = `${String(Math.random()).substring(2, 10)}_${options.version}`
-  let hashFileName = options.name + '.hash'
   let cacheFiles = []
 
   // 遍历打包后的文件列表
@@ -68,26 +73,25 @@ const main = async () => {
 
     if (/\.html$/.test(key)) {
       let swLinkJs = fs.readFileSync(Path.join(__dirname, 'src/swLink.js'), 'utf-8').toString()
+      let swFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs)
+      let hashFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs)
 
       // 写入 sw.js 的路径
-      swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, output + swName)
+      swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, swFileRelative)
       // 写入 sw.hash.js 的路径
-      swLinkJs = swLinkJs.replace(`@@SW_HASH_FILE_PATH@@`, output + hashFileName)
+      swLinkJs = swLinkJs.replace(`@@SW_HASH_FILE_PATH@@`, hashFileRelative)
+
       // 写入 hash 值，用来判断 Service Worker 更新
       swLinkJs = swLinkJs.replace(`@@SW_CACHE_HASH@@`, hash)
-      // 去除多余的换行和空格
-      // swLinkJs = swLinkJs.replace(/\n(\s|\t)+/gm, '\n')
       // 压缩代码
       let swLinkJsMin = await minify(swLinkJs)
 
-      // 将 sw.js 标签，插入 html 文件头部
+      // 将 sw.js 代码块，插入 html 文件头部
       let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
-      fs.writeFileSync(Path.join(relative, key), html)
+      fs.writeFileSync(assets[key].pathAbs, html)
     }
 
     let size = assets[key].size
-    let max = Math.max(...options.size)
-    let min = Math.min(...options.size)
 
     // 文件大小范围控制，缓存范围内的
     if (size <= max && size >= min) {
@@ -108,8 +112,15 @@ const main = async () => {
 
   // 加入过滤函数，方便自定义筛选规则
   if (options.filter) {
-    let cf = options.filter(cacheFiles, assets)
-    if (cf && cf instanceof Array) cacheFiles = cf
+    options.filter(cacheFiles, assets, (cacheFiles2, assets2) => {
+      if (cacheFiles2 && cacheFiles2 instanceof Array) cacheFiles = cacheFiles2
+
+      for (let url in assets2) {
+        if (assets2[url].change) {
+          fs.writeFileSync(assets[url].pathAbs, assets2[url].source)
+        }
+      }
+    })
   }
 
   let swJs = fs.readFileSync(Path.join(__dirname, 'src/sw.js'), 'utf-8').toString()
@@ -120,24 +131,21 @@ const main = async () => {
   // swJs = swJs.replace(`@@PUBLIC_URL@@`, options.publicUrl)
   // 写入需要离线缓存文件的路径集合
   swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
-  // 写入 sw.hash.js 的路径
-  swJs = swJs.replace(`@@SW_JS_NAME@@`, swName)
-  // 写入 sw.hash.js 的路径
-  swJs = swJs.replace(`@@SW_HASH_FILE_PATH@@`, output + hashFileName)
+  // 写入 sw.js 文件名
+  swJs = swJs.replace(`@@SW_JS_NAME@@`, swFile)
+  // 写入 sw.hash.js 文件相对于 sw.js 文件的路径
+  swJs = swJs.replace(`@@SW_HASH_FILE_PATH@@`, hashFile)
   // 写入有效时间
   swJs = swJs.replace(`'@@SW_EFFECTIVE_TIME@@'`, options.time)
 
   // 压缩代码
   let swJsMin = await minify(swJs)
-
   // 添加 sw.js 文件，sw.js 文件将放在根目录下
-  fs.writeFileSync(Path.join(relative, swName), swJsMin.code)
+  fs.writeFileSync(Path.join(relative, swFile), swJsMin.code)
 
   let swHashJs = `${hash}`
-
   // 添加 sw.hash.js 文件，sw.hash.js 文件将放在根目录下
-  // assets[hashFileName] = new RawSource(swHashJs)
-  fs.writeFileSync(Path.join(relative, hashFileName), swHashJs)
+  fs.writeFileSync(Path.join(relative, hashFile), swHashJs)
 }
 
 main()
@@ -160,16 +168,18 @@ function travelFiles(path) {
         else if (fs.statSync(pathStr).isFile()) {
           let relativePath = Path.relative(Path.resolve(path), Path.resolve(pathStr))
           let source = ''
-          if (info.size < 1024 * 1024 * 10) {
+
+          // 超过 100m 的文件不进行读取
+          if (info.size <= 1024 * 1024 * 100) {
             source = fs.readFileSync(pathStr, 'utf8')
           }
           filePath[relativePath.replace(/\\/g, '/')] = {
             name: name,
-            type: 'file',
             path: relativePath.replace(/\\/g, '/'),
-            pathjd: pathStr,
+            pathAbs: pathStr,
             source: source,
             size: info.size,
+            change: false,
           }
         }
       })

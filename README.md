@@ -2,13 +2,9 @@
 
 Vue应用或其它单页面应用，集成 Service Worker 开启离线缓存。<br>
 
-Webpack5.x 请使用 v2.1.x 版<br>
-
-Webpack4.x 及以前的版本，使用v2.0.1 <br>
-
 #### 介绍
 
-Vue项目 或基于 Webpack 搭建的单页面应用，在打包时自动生成并插入 Service Worker 文件。<br>
+Vue项目 或 React 等基于 Webpack 搭建的单页面应用，在打包时自动生成并插入 Service Worker 文件。<br>
 网站部署后，用户进入网站会自动安装 Service Worker，按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
 目前不支持跨域资源缓存。<br>
 项目要有 https 协议才能使 Service Worker 生效。<br>
@@ -43,11 +39,13 @@ Node.js 以及 JavaScript
 
 #### 安装教程
 ```
-npm install -D generate-service-worker-webpack-plugin
+npm install -D web-sw-pack
 ```
 
 
 #### 配置参数：
+
+注意，请注意文件编码，这里的设置都是针对 utf-8 编码文件，如果是其他编码的文件在读取时文件大小会发生变化，且 cacheFlag 可能读取失败
 
 ```
 name      可选，打包之后 Service Worker 文件的名称，默认 sw，全名 sw.js；
@@ -63,41 +61,51 @@ excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的�
 size      可选，允许缓存的文件大小范围。单位：字节。默认缓存 0 ~ 10M 内的文件。
 time      缓存有效时间，此时间内不再进行检查和更新。单位（ms），默认 10000ms。
 filter    可选，自定义过滤函数，有两个参数，返回 离线缓存文件列表 和 webapck assets，可自行处理文件内容。
-            cacheFiles    参数1：缓存文件名列表，对此数组操作将直接作用缓存文件列表，注意，赋值将导致引用关系失效。
-            assets        参数2：compilation.hooks.processAssets.tap 回调函数的 assets，使用请阅读webpack5文档。
-            RawSource     插件内部已经引入了 Source 包，直接暴露出去以供使用。const { RawSource } = require('webpack-sources')
+            cacheFiles 缓存文件url列表
+            assets 所有打包目录的文件列表
+              name      文件名
+              path      相对路径
+              pathAbs   文件绝对路径
+              source    文件内容，注意，超过100m的文件不进行读取
+              size      文件大小，单位：字节
+              change    文件是否发生改变，此属性为 true 时，修改才生效
+            next          用于传递修改后的 cacheFiles
           return 的值如果是数组，将直接赋值给 cacheFiles
 ```
 
 
 #### 使用案例 1
 
+在 package.json 同级目录下新建 sw.config.js 文件，内容如下
+
 ```
-const GenerateServiceWorkerWebpackPlugin = require('generate-service-worker-webpack-plugin')
-
 module.exports = {
-  // ...
-  configureWebpack: config => {
-    let plugins = []
-
-    if (process.env.NODE_ENV === 'production') {
-      plugins.push(new GenerateServiceWorkerWebpackPlugin({
-        name: 'sw',
-        version: '1.0.1',
-        cacheFlag: 'ServiceWorkerFlag', // 缓存内容中包含 ServiceWorkerFlag 字符串的文件
-        excache: /(edit\/|\.mp4$)/, // 不缓存 edit目录下的所有文件 和 .mp4 后缀的文件
-        size: [0, 1024 * 1024 * 10], // 只缓存 10m 以内的文件
-        time: 1000*60, // 1分钟内不再检查更新
-      }));
-    }
-
-    config.plugins = [
-      ...config.plugins,
-      ...plugins
-    ];
-  }
-  // ...
+  name: 'sw',
+  version: '0.0.1',
+  cacheFlag: 'ServiceWorkerFlag',     // 缓存内容中包含 ServiceWorkerFlag 字符串的文件
+  excache: /(edit\/|\.mp4$|\.map$)/,  // 不缓存 edit目录下的所有文件 和 .mp4 .map 后缀的文件
+  size: [0, 1024 * 1024 * 10],        // 只缓存 10m 以内的文件
+  time: 1000*60,                      // 1分钟内不再检查更新
 }
+```
+修改 package.json 文件中的 build 命令
+
+```
+"scripts": {
+  "serve": "vue-cli-service serve",
+  "build": "vue-cli-service build && node node_modules/web-sw-pack/index",
+  "build:test": "vue-cli-service build --mode test",
+  "build:pre": "vue-cli-service build --mode pre",
+  "lint": "vue-cli-service lint"
+}
+```
+
+
+output 如果项目的输出目录是 dist，配置文件是 sw.config.js 则可以省略参数配置
+
+如果有自定义 output 和 配置文件，可以用如下方式设置
+```
+"build": "vue-cli-service build && node node_modules/web-sw-pack/index"
 ```
 
 
@@ -106,56 +114,42 @@ module.exports = {
 自定义过滤方法，比如只缓存js文件，可使用以下方式：
 
 ```
-plugins.push(new GenerateServiceWorkerWebpackPlugin({
+module.exports = {
   name: 'sw',
   version: '1.0.1',
-  filter: function (cacheFiles, assets) {
-    return cacheFiles.filter(m => /(\.js$)/.test(m))
+  filter: function (cacheFiles, assets, next) {
+    cacheFiles = cacheFiles.filter(m => /(\.js$)/.test(m))
+    next(cacheFiles, assets)
   }
-}));
+}
+```
+
+
+下面是完整参数示例：
+
+```
+module.exports = {
+  name: 'sw',
+  version: '0.0.1',
+  cacheFlag: 'ServiceWorkerFlag', // 内容中含 ServiceWorkerFlag 字符串的文件，直接缓存
+  excache: /(edit\/|\.map$)/,     // 不缓存 edit目录下的所有文件 和 .mp4 后缀的文件
+  size: [0, 1024 * 1024 * 5],     // 只缓存 2m 以内的文件
+  filter: function (cacheFiles, assets, next) {
+    // 只缓存前五个文件
+    cacheFiles.splice(0, cacheFiles.length - 3)
+
+    // 遍历文件列表，可在此修改打包后的代码
+    for (let url in assets) {
+      console.log(url);
+    }
+
+    // 传入修改后的缓存文件列表
+    next(cacheFiles)
+  }
+}
 ```
 
 
 #### 参与贡献
 blcyzycc
 
-
-#### 特技
-
-你可以完全使用默认配置，离线缓存全部项目文件
-
-```
-plugins.push(new GenerateServiceWorkerWebpackPlugin());
-```
-
-filter 函数的 assets 参数是 Webpack 打包时 emit 事件的 compilation.assets 属性，我们可以遍历 assets 得到打包的文件，并对其进行操作。<br>
-例如：替换 html 文件的 title。
-```
-plugins.push(new GenerateServiceWorkerWebpackPlugin({
-  name: 'sw',
-  version: '1.0.1',
-  filter: function (cacheFiles, assets, RawSource) {
-    // 只缓存前五个文件
-    cacheFiles.splice(5, cacheFiles.length - 5)
-
-    // 遍历文件列表，可在此修改打包后的代码
-    for (let url in assets) {
-      let source = assets[url].source()
-
-      if (typeof source === 'object') {
-        source = source.toString('utf-8')
-      }
-
-      // 判断是否为 html 文件
-      if (/\.html$/.test(url)) {
-        // 将页面的 title 替换为 hello world
-        source = source.replace(/(<title[^>]*>)(.*)(<\/title[^>]*>)/, '$1hello world$3')
-
-        // const { RawSource } = require('webpack-sources')
-        // 插件内部已经引入了 RawSource 包，直接暴露出来以供使用
-        assets[url] = new RawSource(source)
-      }
-    }
-  }
-}));
-```

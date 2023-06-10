@@ -105,7 +105,7 @@ output 如果项目的输出目录是 dist，配置文件是 sw.config.js 则可
 
 如果有自定义 output 和 配置文件，可以用如下方式设置
 ```
-"build": "vue-cli-service build && node node_modules/web-sw-pack/index"
+"build": "vue-cli-service build && node node_modules/web-sw-pack/index output=dist conf=sw.config.js"
 ```
 
 

@@ -1,4 +1,4 @@
-# generate-service-worker-webpack-plugin
+# web-sw-pack
 
 Vue应用或其它单页面应用，集成 Service Worker 开启离线缓存。<br>
 

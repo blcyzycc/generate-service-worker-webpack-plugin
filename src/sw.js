@@ -13,6 +13,10 @@ const PUBLIC_URL = self.serviceWorker.scriptURL.replace(SW_JS_NAME, '')
 
 // 需要离线缓存的文件，在参与打包时会替换为形如 ['index.html', 'js/index.js'] 的数组
 const SW_CACHE_FILES = '@@SW_CACHE_FILES@@'
+const SW_CACHE_FILES_CDN = '@@SW_CACHE_FILES_CDN@@'
+
+// 控制否能脱机使用
+const SW_OFFLINE = '@@SW_OFFLINE@@'
 
 // 上次检查更新的时间
 let updateTime = 0
@@ -77,7 +81,8 @@ const verifyHash = function () {
     }
   }).catch(function (err) {
     // 请求不到 sw.hash，先注销 Service Worker，因为用户可能放弃使用 Service Worker
-    if (err.message === 'Failed to fetch') {
+    // 如果设置了允许脱机，则不清除缓存
+    if (err.message === 'Failed to fetch' && SW_OFFLINE === false) {
       self.registration.unregister()
       // 如果客户端网络正常，连缓存都清掉
       if (self.navigator.onLine) {
@@ -175,7 +180,7 @@ self.addEventListener('fetch', function (evt) {
           }
           // 其它文件需要匹配 SW_CACHE_FILES 中的路径决定是否缓存
           else if (LastModified) {
-            cache = SW_CACHE_FILES.includes(url.replace(PUBLIC_URL, ''))
+            cache = SW_CACHE_FILES.includes(url.replace(PUBLIC_URL, '')) || SW_CACHE_FILES_CDN.includes(url)
 
             if (cache) {
               if (ext === 'js' && !contentType.includes('application/javascript')) {

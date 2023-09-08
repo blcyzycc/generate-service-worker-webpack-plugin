@@ -166,13 +166,13 @@ self.addEventListener('fetch', function (evt) {
 
       return fetch(evt.request).then(function (res) {
         // 注意：跨域资源 res.url 为空，因此跨域资源不会缓存
-        let url = res.url || ''
+        let url = res.url.split('?')[0] || ''
         let LastModified = res.headers.get('Last-Modified') // 一般返回文件才有 LastModified
         let contentType = res.headers.get('Content-Type') || ''
+        let cache = false
 
         if (evt.request.method === 'GET') {
           let ext = url.split('.').pop()
-          let cache = false
 
           // 返回的 html 文件，并且 url 不是文件路径，直接缓存页面
           if (contentType.startsWith('text/html')) {
@@ -198,7 +198,8 @@ self.addEventListener('fetch', function (evt) {
             })
           }
         }
-        return res.clone()
+
+        return cache ? res.clone() : res
       }).catch(err => {
         console.log(err);
       })

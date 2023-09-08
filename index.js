@@ -51,6 +51,8 @@ options.filter = config.filter
 options.offline = config.offline || false
 // 使用CDN引入的资源，跨域的资源需要加上 crossorigin="anonymous" 设置，才能被缓存
 options.cdn = config.cdn || []
+// 是否压缩sw代码
+options.compress = config.compress === undefined ? true : config.compress
 
 if (options.time < 0) {
   options.time = 0
@@ -65,6 +67,7 @@ const swFile = options.name + '.js'
 const hashFile = options.name + '.hash'
 const hash = `${String(Math.random()).substring(2, 10)}_${options.version}`
 const swFileAbs = Path.normalize(Path.join(output, swFile))
+const htmlList = []
 
 const assets = travelFiles(output)
 
@@ -77,8 +80,8 @@ const main = async () => {
 
     if (/\.html$/.test(key)) {
       let swLinkJs = fs.readFileSync(Path.join(__dirname, 'src/swLink.js'), 'utf-8').toString()
-      let swFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs)
-      let hashFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs)
+      let swFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs).replace(/\\/g, '/')
+      let hashFileRelative = Path.relative(Path.dirname(assets[key].pathAbs), swFileAbs).replace(/\\/g, '/')
 
       // 写入 sw.js 的路径
       swLinkJs = swLinkJs.replace(`@@SW_JS_PATH@@`, swFileRelative)
@@ -91,8 +94,10 @@ const main = async () => {
       let swLinkJsMin = await minify(swLinkJs)
 
       // 将 sw.js 代码块，插入 html 文件头部
-      let html = source.replace(/(<\/head)/, `<script>${swLinkJsMin.code}</script>$1`)
+      let html = source.replace(/(<\/head)/, `<script>${options.compress ? swLinkJsMin.code : swLinkJs}</script>$1`)
       fs.writeFileSync(assets[key].pathAbs, html)
+
+      htmlList.push(key)
     }
 
     let size = assets[key].size
@@ -148,12 +153,20 @@ const main = async () => {
 
   // 压缩代码
   let swJsMin = await minify(swJs)
+
   // 添加 sw.js 文件，sw.js 文件将放在根目录下
-  fs.writeFileSync(Path.join(relative, swFile), swJsMin.code)
+  fs.writeFileSync(Path.join(relative, swFile), options.compress ? swJsMin.code : swJs)
 
   let swHashJs = `${hash}`
   // 添加 sw.hash.js 文件，sw.hash.js 文件将放在根目录下
   fs.writeFileSync(Path.join(relative, hashFile), swHashJs)
+
+  console.log(`Service Worker 服务已注入：
+${htmlList.join(' ')}
+${swFile}
+${hashFile}
+${options.version}
+`);
 }
 
 main()

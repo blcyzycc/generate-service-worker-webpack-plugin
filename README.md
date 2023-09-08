@@ -4,10 +4,10 @@ Vue应用或其它单页面应用，集成 Service Worker 开启离线缓存。<
 
 #### 介绍
 
-Vue项目 或 React 等基于 Webpack 搭建的单页面应用，在打包时自动生成并插入 Service Worker 文件。<br>
+Vue项目 或 React 等基于 Webpack 搭建的单页面应用，在打包时自动集成 Service Worker 服务并开启缓存策略。<br>
 网站部署后，用户进入网站会自动安装 Service Worker，按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
-目前不支持跨域资源缓存。<br>
 项目要有 https 协议才能使 Service Worker 生效。<br>
+跨域资源需要设置 crossorigin="anonymous" 属性，并配置 config.cdn 才能生效。<br>
 
 
 #### 软件架构
@@ -31,6 +31,7 @@ Node.js 以及 JavaScript
          如果向页面发起 postMessage，页面在500ms内没有响应 sw.js，可能用户已弃用 sw.js，立即清除缓存并注销 sw.js；
     不同：说明项目已经更新，清除所有缓存，注销 sw.js，刷新页面；
 2、如果 请求 sw.hash 失败
+    允许离线使用offline是否启用，如果启用则直接使用缓存，如果未启用则执行以下判断，
     判断用户端网络是否正常，
     如果网络正常，则说明此项目可能已经放弃使用 sw.js，立即清除缓存并注销 sw.js；
     如果网络断开连接，则直接使用离线缓存即可；
@@ -71,12 +72,15 @@ filter    可选，自定义过滤函数，有两个参数，返回 离线缓存
               change    文件是否发生改变，此属性为 true 时，修改才生效
             next          用于传递修改后的 cacheFiles
           return 的值如果是数组，将直接赋值给 cacheFiles
+offline   是否允许完全离线使用，默认 true 允许。
+compress  是否压缩sw代码，默认 true 压缩。
+cdn       需要缓存的外部资源，跨域的资源需要加上 crossorigin="anonymous" 属性，如 <script crossorigin="anonymous" src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.2/echarts.min.js"></script> 。
 ```
 
 
 #### 使用案例 1
 
-在 package.json 同级目录下新建 sw.config.js 文件，内容如下
+在 package.json 同级目录下新建 sw.config.js 文件，完整配置如下
 
 ```
 module.exports = {
@@ -86,6 +90,18 @@ module.exports = {
   excache: /(edit\/|\.mp4$|\.map$)/,  // 不缓存 edit目录下的所有文件 和 .mp4 .map 后缀的文件
   size: [0, 1024 * 1024 * 10],        // 只缓存 10m 以内的文件
   time: 1000*60,                      // 1分钟内不再检查更新
+  offline: true,                      // 允许离线使用
+  compress: true,                     // 压缩sw代码
+  // 自定义过滤方法，指定缓存文件
+  filter: function (cacheFiles, assets, next) {
+    cacheFiles = cacheFiles.filter(m => /(\.js$)/.test(m))
+    next(cacheFiles, assets)
+  },
+  // 指定缓存的外部CDN资源 或者 跨域的资源
+  cdn: [
+    'https://cdn.bootcdn.net/ajax/libs/echarts/5.4.2/echarts.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/axios/1.3.6/axios.min.js',
+  ]
 }
 ```
 修改 package.json 文件中的 build 命令
@@ -120,31 +136,6 @@ module.exports = {
   filter: function (cacheFiles, assets, next) {
     cacheFiles = cacheFiles.filter(m => /(\.js$)/.test(m))
     next(cacheFiles, assets)
-  }
-}
-```
-
-
-下面是完整参数示例：
-
-```
-module.exports = {
-  name: 'sw',
-  version: '0.0.1',
-  cacheFlag: 'ServiceWorkerFlag', // 内容中含 ServiceWorkerFlag 字符串的文件，直接缓存
-  excache: /(edit\/|\.map$)/,     // 不缓存 edit目录下的所有文件 和 .mp4 后缀的文件
-  size: [0, 1024 * 1024 * 5],     // 只缓存 2m 以内的文件
-  filter: function (cacheFiles, assets, next) {
-    // 只缓存前五个文件
-    cacheFiles.splice(0, cacheFiles.length - 3)
-
-    // 遍历文件列表，可在此修改打包后的代码
-    for (let url in assets) {
-      console.log(url);
-    }
-
-    // 传入修改后的缓存文件列表
-    next(cacheFiles)
   }
 }
 ```

@@ -47,11 +47,11 @@ options.size = config.size || [0, 1024 * 1024 * 10]
 options.time = config.time === undefined ? 10000 : config.time
 // 提供自定义过滤方法
 options.filter = config.filter
-// 是否允许完全离线，默认不允许
-options.offline = config.offline || false
+// 是否允许完全离线使用，默认 true，允许
+options.offline = config.offline === undefined ? true : config.compress
 // 使用CDN引入的资源，跨域的资源需要加上 crossorigin="anonymous" 设置，才能被缓存
 options.cdn = config.cdn || []
-// 是否压缩sw代码
+// 是否压缩sw代码，默认 true，压缩
 options.compress = config.compress === undefined ? true : config.compress
 
 if (options.time < 0) {

@@ -31,7 +31,17 @@ for (let key in params) {
 
 params.conf = Path.join(cwd, params.conf)
 
-const config = require(params.conf)
+let config = {}
+
+try {
+  config = require(params.conf)
+} catch (e) {
+  // console.log(e);
+  console.log(`No configuration files detected: ${params.conf}, using default configuration.`);
+  console.log(`未检测到配置文件：${params.conf}，使用默认配置。`);
+}
+
+
 const options = {}
 // .appcache 文件名称
 options.name = config.name || 'sw'

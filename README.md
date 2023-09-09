@@ -144,6 +144,19 @@ module.exports = {
 ```
 
 
+#### 使用案例 3
+
+全部使用默认配置，只需要配置打包命令即可，sw.config.js 可以不需要：
+
+```
+"scripts": {
+  ...
+  "build": "vue-cli-service build && node node_modules/web-sw-pack",
+  ...
+}
+```
+
+
 #### 参与贡献
 blcyzycc
 

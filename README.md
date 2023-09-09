@@ -1,6 +1,6 @@
 # web-sw-pack
 
-Vue应用或其它单页面应用，集成 Service Worker 开启离线缓存。<br>
+Vue、React 或其它单页面应用，集成 Service Worker 并开启缓存。<br>
 
 #### 介绍
 
@@ -104,30 +104,33 @@ module.exports = {
   ]
 }
 ```
+
 修改 package.json 文件中的 build 命令
 
 ```
 "scripts": {
   "serve": "vue-cli-service serve",
-  "build": "vue-cli-service build && node node_modules/web-sw-pack/index",
-  "build:test": "vue-cli-service build --mode test",
+  "build": "vue-cli-service build && node node_modules/web-sw-pack",
   "build:pre": "vue-cli-service build --mode pre",
+  "build:test": "vue-cli-service build --mode test",
   "lint": "vue-cli-service lint"
 }
 ```
 
 
-output 如果项目的输出目录是 dist，配置文件是 sw.config.js 则可以省略参数配置
+配置打包命令可以设置参数，output 项目输出目录，默认值 dist，打包配置文件 conf，默认值 sw.config.js
 
-如果有自定义 output 和 配置文件，可以用如下方式设置
+如果有自定义 output 和 配置文件，例如需要根据不同的环境变量打包，可以用如下方式设置
 ```
-"build": "vue-cli-service build && node node_modules/web-sw-pack/index output=dist conf=sw.config.js"
+"build": "vue-cli-service build && node node_modules/web-sw-pack output=dist conf=sw.config.js",
+"build:pre": "vue-cli-service build --mode pre && node node_modules/web-sw-pack output=dist_pre conf=sw.pre.config.js",
+"build:test": "vue-cli-service build --mode test && node node_modules/web-sw-pack output=dist_test conf=sw.test.config.js",
 ```
 
 
 #### 使用案例 2
 
-自定义过滤方法，比如只缓存js文件，可使用以下方式：
+自定义过滤方法，比如只缓存js文件，sw.config.js 配置如下：
 
 ```
 module.exports = {

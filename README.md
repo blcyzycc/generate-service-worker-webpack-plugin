@@ -1,12 +1,12 @@
 # web-sw-pack
 
-Vue、React 或其它单页面应用，集成 Service Worker 并开启缓存。<br>
+Vue、React 或其它单页面应用，集成 Service Worker 并开启缓存。支持webpack和vite等构建工具<br>
 
 #### 介绍
 
-Vue项目 或 React 等基于 Webpack 搭建的单页面应用，在打包时自动集成 Service Worker 服务并开启缓存策略。<br>
+Vue项目 或 React 等工程化项目单页面应用，在打包时自动集成 Service Worker 服务并开启缓存策略。<br>
 网站部署后，用户进入网站会自动安装 Service Worker，按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
-项目要有 https 协议才能使 Service Worker 生效。<br>
+项目要有 https 协议才能使 Service Worker 生效，不能压缩项目文件，会导致sw失效。<br>
 跨域资源需要设置 crossorigin="anonymous" 属性，并配置 config.cdn 才能生效。<br>
 
 
@@ -14,6 +14,11 @@ Vue项目 或 React 等基于 Webpack 搭建的单页面应用，在打包时自
 
 Node.js 以及 JavaScript
 
+
+#### 安装
+```
+npm i -D web-sw-pack
+```
 
 ##### Service Worker 版本更新思路：
 ```
@@ -28,7 +33,7 @@ Node.js 以及 JavaScript
     相同：向页面发起 postMessage，页面接收把当前页面的 hash 发送回 sw.js，再比较 hash 是否相同，
          如果相同，则离线缓存为最新版本，可用。
          如果不同则立即清除缓存并注销 sw.js；
-         如果向页面发起 postMessage，页面在500ms内没有响应 sw.js，可能用户已弃用 sw.js，立即清除缓存并注销 sw.js；
+         如果向页面发起 postMessage，页面在10s内没有响应 sw.js，可能用户已弃用 sw.js，立即清除缓存并注销 sw.js；
     不同：说明项目已经更新，清除所有缓存，注销 sw.js，刷新页面；
 2、如果 请求 sw.hash 失败
     允许离线使用offline是否启用，如果启用则直接使用缓存，如果未启用则执行以下判断，
@@ -38,19 +43,14 @@ Node.js 以及 JavaScript
 */
 ```
 
-#### 安装教程
-```
-npm install -D web-sw-pack
-```
-
-
 #### 配置参数：
 
-注意，请注意文件编码，这里的设置都是针对 utf-8 编码文件，如果是其他编码的文件在读取时文件大小会发生变化，且 cacheFlag 可能读取失败
+在 package.json 同级目录下新建 sw.config.cjs 文件（webpack中也可以是sw.config.js）。
+注意，请注意文件编码需为 utf-8 编码文件，否则可能导致参数读取失败。
 
 ```
 name      可选，打包之后 Service Worker 文件的名称，默认 sw，全名 sw.js；
-version   可选，打包之后 Service Worker 的版本号，默认 1.0.0；
+version   可选，打包之后 Service Worker 的版本号，默认 0.0.1；
 cacheFlag 可选，打包时匹配文件内容中是否包此 flag，有则离线缓存。
           需要你手动在项目文件中加入 flag 字符串，且此配置具有最高优先级。
           注意由于 webpack 打包会自行 tree shaking 清除无用代码，要避免 flag 打包时被清除，可以参考我的做法：
@@ -60,7 +60,7 @@ cacheFlag 可选，打包时匹配文件内容中是否包此 flag，有则离�
           window.sw = 'ServiceWorkerFlag'
 excache   可选，用正则表达式匹配 路径 或 文件名，匹配到的文件不进行离线缓存。
 size      可选，允许缓存的文件大小范围。单位：字节。默认缓存 0 ~ 10M 内的文件。
-time      缓存有效时间，此时间内不再进行检查和更新。单位（ms），默认 10000ms。
+time      缓存有效时间，此时间内不再进行检查和更新。单位（ms），默认 60000ms。
 filter    可选，自定义过滤函数，有两个参数，返回 离线缓存文件列表 和 webapck assets，可自行处理文件内容。
             cacheFiles 缓存文件url列表
             assets 所有打包目录的文件列表
@@ -80,7 +80,7 @@ cdn       需要缓存的外部资源，跨域的资源需要加上 crossorigin=
 
 #### 使用案例 1
 
-在 package.json 同级目录下新建 sw.config.js 文件，完整配置如下
+在 package.json 同级目录下新建 sw.config.cjs 文件，完整配置如下：
 
 ```
 module.exports = {
@@ -109,28 +109,26 @@ module.exports = {
 
 ```
 "scripts": {
-  "serve": "vue-cli-service serve",
-  "build": "vue-cli-service build && node node_modules/web-sw-pack",
-  "build:pre": "vue-cli-service build --mode pre",
-  "build:test": "vue-cli-service build --mode test",
-  "lint": "vue-cli-service lint"
+  ...
+  "build": "vue-cli-service build && node node_modules/web-sw-pack conf=sw.test.config.cjs",
+  ...
 }
 ```
 
 
-配置打包命令可以设置参数，output 项目输出目录，默认值 dist，打包配置文件 conf，默认值 sw.config.js
+配置打包命令可以设置参数，output 项目输出目录，默认值 dist，打包配置文件 conf，默认值 sw.config.cjs
 
-如果有自定义 output 和 配置文件，例如需要根据不同的环境变量打包，可以用如下方式设置
+如果有自定义 output 和 配置文件，例如需要根据不同的环境变量打包，可以使用多个配置文件。
 ```
-"build": "vue-cli-service build && node node_modules/web-sw-pack output=dist conf=sw.config.js",
-"build:pre": "vue-cli-service build --mode pre && node node_modules/web-sw-pack output=dist_pre conf=sw.pre.config.js",
-"build:test": "vue-cli-service build --mode test && node node_modules/web-sw-pack output=dist_test conf=sw.test.config.js",
+"build": "vue-cli-service build && node node_modules/web-sw-pack output=dist conf=sw.config.cjs",
+"build:pre": "vue-cli-service build --mode pre && node node_modules/web-sw-pack output=dist_pre conf=sw.pre.config.cjs",
+"build:test": "vue-cli-service build --mode test && node node_modules/web-sw-pack output=dist_test conf=sw.test.config.cjs",
 ```
 
 
 #### 使用案例 2
 
-自定义过滤方法，比如只缓存js文件，sw.config.js 配置如下：
+自定义过滤方法，比如只缓存js文件，sw.config.cjs 配置如下：
 
 ```
 module.exports = {
@@ -146,7 +144,7 @@ module.exports = {
 
 #### 使用案例 3
 
-全部使用默认配置，只需要配置打包命令即可，sw.config.js 可以不需要：
+全部使用默认配置，只需要配置打包命令即可，可以不设置 sw.config.cjs 文件：
 
 ```
 "scripts": {
@@ -159,4 +157,3 @@ module.exports = {
 
 #### 参与贡献
 blcyzycc
-

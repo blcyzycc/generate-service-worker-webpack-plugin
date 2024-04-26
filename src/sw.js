@@ -27,7 +27,7 @@ let effectiveTime = '@@SW_EFFECTIVE_TIME@@'
 // 当前活动的窗口的id
 let nowClientId = ''
 
-// 与页面是否关联，向页面发送 message，如果页面 500ms 内没有响应，说明页面与 se.js 无关联
+// 与页面是否关联，向页面发送 message，如果页面 10s 内没有响应，说明页面与 sw.js 无关联
 let swRespond = false
 
 const verifyHash = function () {
@@ -51,7 +51,8 @@ const verifyHash = function () {
 
       // hash 不存在，或与已改变
       if (!hash || SW_CACHE_HASH !== hash) {
-        console.log('版本更新：' + SW_CACHE_HASH + '==>' + hash);
+        console.log('版本更新：' + SW_CACHE_HASH + '--->' + hash);
+        console.log('注销当前Service Worker，删除缓存并刷新页面。');
 
         // 删除缓存，注销 Service Worker，并刷新页面
         caches.delete(SW_CACHE_HASH).then(function () {
@@ -83,9 +84,12 @@ const verifyHash = function () {
     // 请求不到 sw.hash，先注销 Service Worker，因为用户可能放弃使用 Service Worker
     // 如果设置了允许脱机，则不清除缓存
     if (err.message === 'Failed to fetch' && SW_OFFLINE === false) {
+      console.log('未找到sw.hash，先注销Service Worker。');
       self.registration.unregister()
+
       // 如果客户端网络正常，连缓存都清掉
       if (self.navigator.onLine) {
+        console.log('未找到sw.hash且设备有网络，清除缓存。');
         caches.delete(SW_CACHE_HASH)
       }
     }
@@ -95,16 +99,15 @@ const verifyHash = function () {
 // 页面是否响应
 const waitPageRespond = function () {
   swRespond = true
-  // 一段时间后检查页面是否响应，swRespond 还为真，说明页面无关联
+  // 10s后检查页面是否响应，swRespond 还为真，说明页面无关联
   setTimeout(function () {
     if (swRespond) {
-      // console.log('页面无响应，删除缓存，并注销 Service Worker');
-      // 删除缓存，并注销 Service Worker
+      console.log('发送swHash过10s后页面无响应，注销Service Worker并删除缓存。');
       caches.delete(SW_CACHE_HASH).then(function () {
         self.registration.unregister()
       })
     }
-  }, 500)
+  }, 10000)
 }
 
 // 缓存静态资源，install 事件是 SW 触发的第一个事件，并且仅触发一次。
@@ -120,6 +123,7 @@ self.addEventListener('activate', function (evt) {
     return Promise.all(cacheNames.filter(function (cacheName) {
       return cacheName != SW_CACHE_HASH
     }).map(function (cacheName) {
+      console.log('sw.js发生更新，删除以前的缓存区文件，保留当前的。');
       return caches.delete(cacheName)
     }));
   }));
@@ -135,8 +139,10 @@ self.addEventListener('message', function (evt) {
   }
   // 验证 hash 是否相同
   else if (data.type === 'swHash') {
+    console.log('sw.js收到swHash');
     swRespond = false
     if (data.hash !== SW_CACHE_HASH) {
+      console.log('hash发生变化，注销Service Worker并删除缓存');
       caches.delete(SW_CACHE_HASH).then(function () {
         self.registration.unregister()
       })

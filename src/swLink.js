@@ -1,4 +1,4 @@
-window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
+var SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
 
 (function () {
   // 注册 Service Worker
@@ -7,7 +7,7 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
       if (document.readyState === 'interactive' && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
           type: 'openPage',
-          hash: window.SW_CACHE_HASH,
+          hash: SW_CACHE_HASH,
         })
       }
     }
@@ -22,9 +22,10 @@ window.SW_CACHE_HASH = '@@SW_CACHE_HASH@@';
           window.location.reload()
         }
         else if (data.type === 'swHash') {
+          console.log('页面收到swHash');
           navigator.serviceWorker.controller.postMessage({
             type: 'swHash',
-            hash: window.SW_CACHE_HASH,
+            hash: SW_CACHE_HASH,
           })
         }
       })

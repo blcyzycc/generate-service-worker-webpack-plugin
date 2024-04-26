@@ -36,7 +36,7 @@ let config = {}
 try {
   config = require(params.conf)
 } catch (e) {
-  // console.log(e);
+  console.log(e);
   console.log(`No configuration files detected: ${params.conf}, using default configuration.`);
   console.log(`未检测到配置文件：${params.conf}，使用默认配置。`);
 }
@@ -53,8 +53,8 @@ options.excache = config.excache || null
 options.cacheFlag = config.cacheFlag || ''
 // 只缓存文件大小在此范围内的文件，默认最大缓存文件 10M
 options.size = config.size || [0, 1024 * 1024 * 10]
-// 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 10000ms
-options.time = config.time === undefined ? 10000 : config.time
+// 有效时间，在此时间内不检查更新。防止用户清除 SW_CACHE_HASH 导致页面无限刷新，默认 60s
+options.time = config.time === undefined ? 60000 : config.time
 // 提供自定义过滤方法
 options.filter = config.filter
 // 是否允许完全离线使用，默认 true，允许

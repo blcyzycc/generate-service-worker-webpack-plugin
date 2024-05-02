@@ -61,8 +61,6 @@ options.time = config.time === undefined ? 60000 : config.time
 options.filter = config.filter
 // 是否允许完全离线使用，默认 true，允许
 options.offline = config.offline === undefined ? true : config.compress
-// 使用CDN引入的资源，跨域的资源需要加上 crossorigin="anonymous" 设置，才能被缓存
-options.cdn = config.cdn || []
 // 是否压缩sw代码，默认 true，压缩
 options.compress = config.compress === undefined ? true : config.compress
 
@@ -152,8 +150,6 @@ const main = async () => {
   // swJs = swJs.replace(`@@PUBLIC_URL@@`, options.publicUrl)
   // 写入需要离线缓存文件的路径集合
   swJs = swJs.replace(`'@@SW_CACHE_FILES@@'`, `${JSON.stringify(cacheFiles)}`)
-  // 写入需要离线缓存的CDN引入的文件的路径集合
-  swJs = swJs.replace(`'@@SW_CACHE_FILES_CDN@@'`, `${JSON.stringify(options.cdn)}`)
   // 写入 sw.js 文件名
   swJs = swJs.replace(`@@SW_JS_NAME@@`, swFile)
   // 写入 sw.hash.js 文件相对于 sw.js 文件的路径

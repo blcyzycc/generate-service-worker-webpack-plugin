@@ -13,7 +13,6 @@ const PUBLIC_URL = self.serviceWorker.scriptURL.replace(SW_JS_NAME, '')
 
 // 需要离线缓存的文件，在参与打包时会替换为形如 ['index.html', 'js/index.js'] 的数组
 const SW_CACHE_FILES = '@@SW_CACHE_FILES@@'
-const SW_CACHE_FILES_CDN = '@@SW_CACHE_FILES_CDN@@'
 
 // 控制否能脱机使用
 const SW_OFFLINE = '@@SW_OFFLINE@@'
@@ -173,7 +172,6 @@ self.addEventListener('fetch', function (evt) {
       return fetch(evt.request).then(function (res) {
         // 注意：跨域资源 res.url 为空，因此跨域资源不会缓存
         let url = res.url.split('?')[0] || ''
-        let LastModified = res.headers.get('Last-Modified') // 一般返回文件才有 LastModified
         let contentType = res.headers.get('Content-Type') || ''
         let cache = false
 
@@ -185,8 +183,8 @@ self.addEventListener('fetch', function (evt) {
             cache = true
           }
           // 其它文件需要匹配 SW_CACHE_FILES 中的路径决定是否缓存
-          else if (LastModified) {
-            cache = SW_CACHE_FILES.includes(url.replace(PUBLIC_URL, '')) || SW_CACHE_FILES_CDN.includes(url)
+          else {
+            cache = SW_CACHE_FILES.includes(url.replace(PUBLIC_URL, ''))
 
             if (cache) {
               if (ext === 'js' && !contentType.includes('application/javascript')) {

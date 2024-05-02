@@ -6,8 +6,9 @@ Vue、React 或其它单页面应用，集成 Service Worker 并开启缓存。�
 
 Vue项目 或 React 等工程化项目单页面应用，在打包时自动集成 Service Worker 服务并开启缓存策略。<br>
 网站部署后，用户进入网站会自动安装 Service Worker，按需加载并离线缓存项目文件，当项目更新时会立即刷新页面并重新离线缓存资源。<br>
-项目要有 https 协议才能使 Service Worker 生效，不能压缩项目文件，会导致sw失效。<br>
-跨域资源需要设置 crossorigin="anonymous" 属性，并配置 config.cdn 才能生效。<br>
+项目要有 https 协议才能使 Service Worker 生效。
+加载的.gz、.gzip文件不会被缓存，所以如果配置打包时压缩文件，会导致sw离线缓存失效。
+Service Worker 遵循同源策略，所以跨域资源不能缓存<br>
 
 
 #### 软件架构
@@ -74,7 +75,6 @@ filter    可选，自定义过滤函数，有两个参数，返回 离线缓存
           return 的值如果是数组，将直接赋值给 cacheFiles
 offline   是否允许完全离线使用，默认 true 允许。
 compress  是否压缩sw代码，默认 true 压缩。
-cdn       需要缓存的外部资源，跨域的资源需要加上 crossorigin="anonymous" 属性，如 <script crossorigin="anonymous" src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.2/echarts.min.js"></script> 。
 ```
 
 
@@ -96,12 +96,7 @@ module.exports = {
   filter: function (cacheFiles, assets, next) {
     cacheFiles = cacheFiles.filter(m => /(\.js$)/.test(m))
     next(cacheFiles, assets)
-  },
-  // 指定缓存的外部CDN资源 或者 跨域的资源
-  cdn: [
-    'https://cdn.bootcdn.net/ajax/libs/echarts/5.4.2/echarts.min.js',
-    'https://cdn.bootcdn.net/ajax/libs/axios/1.3.6/axios.min.js',
-  ]
+  }
 }
 ```
 

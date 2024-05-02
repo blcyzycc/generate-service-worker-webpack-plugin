@@ -31,14 +31,16 @@ for (let key in params) {
 
 params.conf = Path.join(cwd, params.conf)
 
+let configErr = false
 let config = {}
 
 try {
   config = require(params.conf)
 } catch (e) {
+  configErr = true
+
   console.log(e);
   console.log(`No configuration files detected: ${params.conf}, using default configuration.`);
-  console.log(`未检测到配置文件：${params.conf}，使用默认配置。`);
 }
 
 
@@ -177,6 +179,10 @@ ${swFile}
 ${hashFile}
 ${options.version}
 `);
+
+  if (configErr) {
+    console.log(`未检测到配置文件，或配置文件出错，sw将使用默认配置。`);
+  }
 }
 
 main()

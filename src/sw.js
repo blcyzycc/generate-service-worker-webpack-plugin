@@ -174,7 +174,6 @@ self.addEventListener('fetch', function (evt) {
   evt.respondWith(
     caches.match(evt.request).then(function (response) {
       let SW_NO_CACHE = evt.request.headers.get('SW_NO_CACHE')
-      let contentType = ''
 
       if (response && SW_NO_CACHE !== 'true') {
         return response
@@ -184,8 +183,7 @@ self.addEventListener('fetch', function (evt) {
         // 注意：跨域资源 res.url 为空，因此跨域资源不会缓存
         let url = res.url || ''
         let LastModified = res.headers.get('Last-Modified') // 一般返回文件才有 LastModified
-
-        contentType = res.headers.get('Content-Type') || ''
+        let contentType = res.headers.get('Content-Type') || ''
 
         if (evt.request.method === 'GET') {
           let ext = url.split('.').pop()
